@@ -1,0 +1,74 @@
+{
+    "directoryStructure": {
+        "src/": {
+            "required": [
+                "extension.ts",
+                "commands/",
+                "providers/",
+                "utils/",
+                "types/",
+                "webview/"
+            ],
+            "optional": [
+                "test/",
+                "assets/"
+            ]
+        },
+        "src/webview/": {
+            "required": [
+                "webviewProvider.ts",
+                "components/"
+            ],
+            "optional": [
+                "styles/",
+                "assets/"
+            ]
+        },
+        "src/webview/components/": {
+            "required": [
+                "index.ts",
+                "kodus-button.ts",
+                "kodus-card.ts",
+                "kodus-mcp-tool.ts",
+                "kodus-github-sync.ts"
+            ]
+        },
+        "config/": {
+            "required": [
+                "template.json",
+                "recommended-config.json",
+                "commands-registry.json"
+            ],
+            "optional": [
+                "webview-schema.json",
+                "component-schema.json",
+                "api-schema.json",
+                "project-layout.json"
+            ]
+        },
+        ".cursor/rules/": {
+            "required": [
+                "webview-development.mdc",
+                "ui-components.mdc",
+                "configuration-validation.mdc"
+            ]
+        }
+    },
+    "filePatterns": {
+        "components": "src/webview/components/kodus-*.ts",
+        "commands": "src/commands/*.ts",
+        "providers": "src/providers/*.ts",
+        "utils": "src/utils/*.ts",
+        "types": "src/types/*.ts",
+        "rules": ".cursor/rules/*.mdc",
+        "config": "config/*.json"
+    },
+    "importPaths": {
+        "@commands/*": "src/commands/*",
+        "@providers/*": "src/providers/*",
+        "@utils/*": "src/utils/*",
+        "@types/*": "src/types/*",
+        "@types": "src/types/index",
+        "@webview/*": "src/webview/*"
+    }
+}

@@ -7,7 +7,8 @@
         "engines",
         "main",
         "contributes",
-        "activationEvents"
+        "activationEvents",
+        "scripts"
     ],
     "optionalFields": [
         "categories",
@@ -16,13 +17,28 @@
         "license",
         "repository",
         "bugs",
-        "homepage"
+        "homepage",
+        "devDependencies"
     ],
     "fieldValidation": {
         "name": "string, kebab-case format",
         "displayName": "string, human readable",
         "description": "string, max 200 characters",
         "version": "semantic version format",
-        "engines": "object with vscode version constraint"
-    }
+        "engines": "object with vscode version constraint",
+        "main": "string, points to compiled extension",
+        "contributes": "object with commands, keybindings, viewsContainers, views",
+        "activationEvents": "array of activation event strings",
+        "scripts": "object with build and development scripts"
+    },
+    "expectedCommands": [
+        "kodus-extension.welcome",
+        "kodus-extension.formatJson",
+        "kodus-extension.convertCase",
+        "kodus-extension.insertTimestamp",
+        "kodus-extension.insertSnippet"
+    ],
+    "expectedViews": [
+        "kodus-activitybar"
+    ]
 }

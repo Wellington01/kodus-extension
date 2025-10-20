@@ -1,0 +1,64 @@
+{
+    "commands": [
+        {
+            "command": "kodus-extension.welcome",
+            "title": "Welcome to Kodus Tools",
+            "category": "Kodus",
+            "implementation": "src/extension.ts"
+        },
+        {
+            "command": "kodus-extension.formatJson",
+            "title": "Format JSON",
+            "category": "Kodus",
+            "implementation": "src/commands/quickActions.ts",
+            "keybinding": "ctrl+shift+f"
+        },
+        {
+            "command": "kodus-extension.convertCase",
+            "title": "Convert Case",
+            "category": "Kodus",
+            "implementation": "src/commands/quickActions.ts",
+            "keybinding": "ctrl+shift+c"
+        },
+        {
+            "command": "kodus-extension.insertTimestamp",
+            "title": "Insert Timestamp",
+            "category": "Kodus",
+            "implementation": "src/commands/quickActions.ts",
+            "keybinding": "ctrl+shift+t"
+        },
+        {
+            "command": "kodus-extension.insertSnippet",
+            "title": "Insert Code Snippet",
+            "category": "Kodus",
+            "implementation": "src/providers/snippetProvider.ts"
+        }
+    ],
+    "views": [
+        {
+            "id": "kodus-activitybar",
+            "title": "Kodus Tools",
+            "type": "webview",
+            "implementation": "src/webview/webviewProvider.ts"
+        }
+    ],
+    "validation": {
+        "requiredFields": [
+            "command",
+            "title",
+            "category",
+            "implementation"
+        ],
+        "optionalFields": [
+            "keybinding",
+            "when"
+        ],
+        "categories": [
+            "Kodus",
+            "Other",
+            "Linters",
+            "Formatters",
+            "Snippets"
+        ]
+    }
+}

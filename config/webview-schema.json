@@ -1,0 +1,124 @@
+{
+    "webviewProvider": {
+        "requiredMethods": [
+            "resolveWebviewView",
+            "_getHtmlForWebview"
+        ],
+        "requiredProperties": [
+            "context",
+            "viewType"
+        ],
+        "lifecycleMethods": [
+            "onDidDispose",
+            "onDidChangeVisibility"
+        ],
+        "messageHandlers": [
+            "executeCommand",
+            "executeMcpTool",
+            "fetchGitHubPRs",
+            "createGitHubPR",
+            "autoMergePRs",
+            "openGitHubPR"
+        ],
+        "validation": {
+            "htmlContent": {
+                "requiredElements": [
+                    "head",
+                    "body",
+                    "style",
+                    "script"
+                ],
+                "requiredStyles": [
+                    "body",
+                    ".header",
+                    ".tools-grid",
+                    ".tool-card",
+                    ".section",
+                    ".btn"
+                ],
+                "requiredScripts": [
+                    "acquireVsCodeApi",
+                    "executeCommand",
+                    "executeMcpTool",
+                    "fetchGitHubPRs"
+                ]
+            },
+            "cssVariables": [
+                "--vscode-font-family",
+                "--vscode-font-size",
+                "--vscode-foreground",
+                "--vscode-editor-background",
+                "--vscode-panel-border",
+                "--vscode-button-background",
+                "--vscode-button-foreground"
+            ]
+        }
+    },
+    "webviewComponents": {
+        "requiredComponents": [
+            "KodusButton",
+            "KodusCard",
+            "KodusMcpTool",
+            "KodusGithubSync"
+        ],
+        "componentStructure": {
+            "KodusButton": {
+                "properties": [
+                    "label",
+                    "icon",
+                    "disabled",
+                    "variant"
+                ],
+                "methods": [
+                    "_handleClick"
+                ],
+                "events": [
+                    "kodus-click"
+                ]
+            },
+            "KodusCard": {
+                "properties": [
+                    "title",
+                    "description",
+                    "interactive"
+                ],
+                "methods": [
+                    "_handleClick"
+                ],
+                "events": [
+                    "kodus-card-click"
+                ]
+            },
+            "KodusMcpTool": {
+                "properties": [
+                    "toolName",
+                    "description",
+                    "loading"
+                ],
+                "methods": [
+                    "_executeTool",
+                    "_clearResult",
+                    "_sendMessageToExtension"
+                ],
+                "events": [
+                    "mcp-tool-response"
+                ]
+            },
+            "KodusGithubSync": {
+                "properties": [
+                    "repo",
+                    "branch"
+                ],
+                "methods": [
+                    "_fetchPRs",
+                    "_createPR",
+                    "_mergePRs",
+                    "_openPR"
+                ],
+                "events": [
+                    "github-prs-response"
+                ]
+            }
+        }
+    }
+}

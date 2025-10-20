@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
-import { registerQuickActions } from './commands/quickActions';
-import { registerSnippetProvider } from './providers/snippetProvider';
+import { registerQuickActions } from '@commands/quickActions';
+import { registerSnippetProvider } from '@providers/snippetProvider';
+import { KodusWebviewProvider } from '@webview/webviewProvider';
+import type { ExtensionContext } from '@types';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: ExtensionContext) {
   console.log('Kodus Development Tools is now active!');
 
   // Registrar comandos de ações rápidas
@@ -10,6 +12,15 @@ export function activate(context: vscode.ExtensionContext) {
   
   // Registrar provider de snippets
   registerSnippetProvider(context);
+
+  // Registrar webview provider
+  const webviewProvider = new KodusWebviewProvider(context);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      KodusWebviewProvider.viewType,
+      webviewProvider
+    )
+  );
 
   // Comando de boas-vindas
   const welcomeCommand = vscode.commands.registerCommand('kodus-extension.welcome', () => {

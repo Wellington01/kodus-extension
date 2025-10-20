@@ -27,8 +27,8 @@ A powerful, cross-platform VSCode extension that provides essential development 
 
 ### From Source
 1. Clone this repository
-2. Install dependencies: `npm install`
-3. Compile: `npm run compile`
+2. Install dependencies: `yarn install`
+3. Compile: `yarn compile`
 4. Press `F5` to run in Extension Development Host
 
 ### Package Installation
@@ -41,18 +41,19 @@ code --install-extension kodus-extension-0.0.1.vsix
 
 ### Prerequisites
 - Node.js 16+
+- Yarn package manager
 - VSCode 1.74+
 
 ### Setup
 ```bash
-npm install
-npm run compile
-npm run watch  # For development
+yarn install
+yarn compile
+yarn watch  # For development
 ```
 
 ### Build
 ```bash
-npm run build
+yarn build
 vsce package
 ```
 

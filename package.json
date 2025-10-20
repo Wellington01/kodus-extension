@@ -17,7 +17,8 @@
     "onCommand:kodus-extension.formatJson",
     "onCommand:kodus-extension.convertCase",
     "onCommand:kodus-extension.insertTimestamp",
-    "onCommand:kodus-extension.insertSnippet"
+    "onCommand:kodus-extension.insertSnippet",
+    "onView:kodus-extension.webview"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -67,29 +68,45 @@
         "mac": "cmd+shift+t",
         "when": "editorTextFocus"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kodus-activitybar",
+          "title": "Kodus Tools",
+          "icon": "$(tools)"
+        }
+      ]
+    },
+    "views": {
+      "kodus-activitybar": [
+        {
+          "type": "webview",
+          "id": "kodus-extension.webview",
+          "name": "Kodus Tools"
+        }
+      ]
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
+    "vscode:prepublish": "yarn run compile",
+    "compile": "node esbuild.config.js",
+    "watch": "node esbuild.config.js --watch",
+    "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "build": "webpack --mode production",
-    "dev": "webpack --mode development --watch"
+    "build": "node esbuild.config.js --production",
+    "dev": "node esbuild.config.js --watch"
   },
   "devDependencies": {
-    "@types/node": "^24.8.1",
+    "@types/node": "^24.9.0",
     "@types/vscode": "^1.105.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
+    "esbuild": "^0.25.11",
     "eslint": "^9.38.0",
     "prettier": "^3.6.2",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "webpack": "^5.102.1",
-    "webpack-cli": "^6.0.1"
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",
@@ -110,5 +127,8 @@
   "bugs": {
     "url": "https://github.com/kodustech/kodus-extension/issues"
   },
-  "homepage": "https://github.com/kodustech/kodus-extension#readme"
+  "homepage": "https://github.com/kodustech/kodus-extension#readme",
+  "dependencies": {
+    "lit": "^3.3.1"
+  }
 }

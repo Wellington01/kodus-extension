@@ -1,0 +1,74 @@
+{
+    "litElementComponents": {
+        "requiredDecorators": [
+            "@customElement",
+            "@property"
+        ],
+        "requiredImports": [
+            "lit",
+            "lit/decorators.js"
+        ],
+        "componentStructure": {
+            "requiredSections": [
+                "static styles",
+                "render method",
+                "event handlers"
+            ],
+            "optionalSections": [
+                "lifecycle methods",
+                "private methods",
+                "state management"
+            ]
+        },
+        "stylingStandards": {
+            "cssVariables": {
+                "required": [
+                    "--vscode-font-family",
+                    "--vscode-foreground",
+                    "--vscode-background"
+                ],
+                "optional": [
+                    "--vscode-button-background",
+                    "--vscode-panel-border",
+                    "--vscode-focusBorder"
+                ]
+            },
+            "responsiveDesign": {
+                "required": [
+                    "display: flex",
+                    "display: grid"
+                ],
+                "breakpoints": [
+                    "minmax(200px, 1fr)"
+                ]
+            }
+        },
+        "eventHandling": {
+            "requiredPatterns": [
+                "CustomEvent creation",
+                "event bubbling",
+                "event cleanup"
+            ],
+            "namingConvention": "kodus-*"
+        }
+    },
+    "webviewIntegration": {
+        "messagePassing": {
+            "requiredMethods": [
+                "postMessage",
+                "addEventListener"
+            ],
+            "messageStructure": {
+                "command": "string",
+                "data": "object"
+            }
+        },
+        "vscodeAPI": {
+            "requiredCalls": [
+                "acquireVsCodeApi()",
+                "vscode.postMessage()",
+                "window.addEventListener()"
+            ]
+        }
+    }
+}
