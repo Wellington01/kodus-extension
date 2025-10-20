@@ -1,0 +1,28 @@
+{
+    "requiredFields": [
+        "name",
+        "displayName",
+        "description",
+        "version",
+        "engines",
+        "main",
+        "contributes",
+        "activationEvents"
+    ],
+    "optionalFields": [
+        "categories",
+        "keywords",
+        "author",
+        "license",
+        "repository",
+        "bugs",
+        "homepage"
+    ],
+    "fieldValidation": {
+        "name": "string, kebab-case format",
+        "displayName": "string, human readable",
+        "description": "string, max 200 characters",
+        "version": "semantic version format",
+        "engines": "object with vscode version constraint"
+    }
+}

@@ -1,0 +1,39 @@
+---
+description: Performance and Optimization Rules
+globs:
+alwaysApply: true
+---
+
+# Performance and Optimization Rules
+
+## Performance Best Practices
+
+- Use lazy loading for heavy operations
+- Minimize memory usage and avoid memory leaks
+- Avoid blocking the main thread with synchronous operations
+- Use webpack for optimal bundling and tree shaking
+- Implement proper cleanup in deactivate function
+
+## VSCode Extension Performance
+
+- Use proper activation events to optimize startup time
+- Cache expensive operations when possible
+- Use disposable patterns for resource management
+- Avoid unnecessary API calls
+- Use debouncing for user input handling
+
+## Code Optimization
+
+- Prefer const over let, avoid var
+- Use async/await instead of promises when possible
+- Minimize bundle size with proper imports
+- Use TypeScript strict mode for better optimization
+- Avoid deep object nesting
+
+## Memory Management
+
+- Dispose of resources properly
+- Avoid circular references
+- Use WeakMap/WeakSet when appropriate
+- Clear event listeners and timers
+- Monitor memory usage during development

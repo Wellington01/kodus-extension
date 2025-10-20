@@ -1,0 +1,45 @@
+---
+description: Configuration File Validation Rules
+globs:
+alwaysApply: true
+---
+
+# Configuration File Validation Rules
+
+## Package.json Validation
+
+- Validate that package.json contains required fields from template.json
+- Ensure version follows semantic versioning from CHANGELOG.md
+- Check that dependencies match those listed in package-lock.json
+- Verify that scripts are consistent with those defined in build-config.json
+- Ensure activationEvents match commands defined in commands-registry.json
+
+## TypeScript Configuration
+
+- Validate tsconfig.json settings against recommended-config.json
+- Check that compiler options match project standards in tsconfig-base.json
+- Ensure paths configuration is consistent with directory structure in project-layout.json
+- Verify that exclude patterns match those in .gitignore
+
+## Extension Configuration
+
+- Validate that all commands in package.json are implemented in src/commands/
+- Check that all providers are properly registered according to providers-config.json
+- Ensure activation events are properly configured based on usage-patterns.json
+- Verify that contribution points match the extension manifest in extension-schema.json
+
+## Build Configuration
+
+- Validate webpack.config.js against build-standards.json
+- Check that entry points match those defined in build-manifest.json
+- Ensure output configuration follows deployment-requirements.json
+- Verify that externals match those listed in dependencies-audit.json
+
+## Code Quality Configuration
+
+- Validate ESLint configuration against coding-standards.json
+- Check that Prettier configuration matches formatting-rules.json
+- Ensure test configuration follows testing-standards.json
+- Verify that pre-commit hooks are configured according to git-hooks-config.json
+
+@kody-sync

@@ -1,0 +1,114 @@
+{
+  "name": "kodus-extension",
+  "displayName": "Kodus Development Tools",
+  "description": "Open source development tools and utilities for enhanced productivity",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Linters",
+    "Formatters",
+    "Snippets"
+  ],
+  "activationEvents": [
+    "onCommand:kodus-extension.welcome",
+    "onCommand:kodus-extension.formatJson",
+    "onCommand:kodus-extension.convertCase",
+    "onCommand:kodus-extension.insertTimestamp",
+    "onCommand:kodus-extension.insertSnippet"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kodus-extension.welcome",
+        "title": "Welcome to Kodus Tools",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.formatJson",
+        "title": "Format JSON",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.convertCase",
+        "title": "Convert Case",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.insertTimestamp",
+        "title": "Insert Timestamp",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.insertSnippet",
+        "title": "Insert Code Snippet",
+        "category": "Kodus"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "kodus-extension.formatJson",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "editorTextFocus && resourceExtname == '.json'"
+      },
+      {
+        "command": "kodus-extension.convertCase",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "kodus-extension.insertTimestamp",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "@types/vscode": "^1.105.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint": "^9.38.0",
+    "prettier": "^3.6.2",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kodustech/kodus-extension.git"
+  },
+  "keywords": [
+    "vscode",
+    "extension",
+    "development",
+    "productivity",
+    "open-source",
+    "cross-platform",
+    "tools",
+    "utilities"
+  ],
+  "author": "Kodus Tech",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kodustech/kodus-extension/issues"
+  },
+  "homepage": "https://github.com/kodustech/kodus-extension#readme"
+}

@@ -1,0 +1,49 @@
+---
+description: Security and Best Practices Rules
+globs:
+alwaysApply: true
+---
+
+# Security and Best Practices Rules
+
+## Security Guidelines
+
+- Validate all user inputs before processing
+- Follow principle of least privilege
+- Don't expose sensitive data in logs or error messages
+- Use proper sanitization for file operations
+- Avoid eval() and similar dangerous functions
+
+## Input Validation
+
+- Always validate user input from commands and inputs
+- Sanitize file paths and URIs
+- Validate JSON before parsing
+- Check file permissions before operations
+- Handle edge cases gracefully
+
+## Error Handling
+
+- Provide user-friendly error messages
+- Log errors appropriately without exposing sensitive data
+- Handle async operations errors properly
+- Don't expose internal implementation details
+- Use proper error boundaries
+
+## VSCode Extension Security
+
+- Request only necessary permissions in package.json
+- Validate workspace paths and file operations
+- Handle extension activation errors gracefully
+- Use secure defaults for configurations
+- Follow VSCode security guidelines
+
+## Code Security
+
+- Avoid using innerHTML with user content
+- Validate external dependencies
+- Use TypeScript for type safety
+- Avoid dangerous eval-like operations
+- Keep dependencies updated
+
+@kody-sync

@@ -1,0 +1,57 @@
+---
+description: Error Handling and Validation Rules
+globs:
+alwaysApply: true
+---
+
+# Error Handling and Validation Rules
+
+## Error Handling Strategy
+
+- Avoid try-catch blocks unless absolutely necessary
+- Use early returns for validation
+- Validate inputs at function boundaries
+- Provide user-friendly error messages
+- Log errors appropriately without exposing sensitive data
+
+## Input Validation
+
+- Always validate user input from commands
+- Check file types before operations
+- Validate editor state before actions
+- Sanitize file paths and URIs
+- Handle edge cases gracefully
+
+## Editor Validation
+
+- Check if editor exists before operations
+- Validate file language before specific operations
+- Check if selection exists before text operations
+- Validate document state before modifications
+- Handle unsaved changes appropriately
+
+## User Feedback
+
+- Show warning messages for invalid operations
+- Provide helpful error messages
+- Use consistent message patterns
+- Show success feedback when appropriate
+- Guide users to correct actions
+
+## Defensive Programming
+
+- Assume external APIs can fail
+- Handle null/undefined values gracefully
+- Use optional chaining when appropriate
+- Provide fallback behaviors
+- Validate assumptions with assertions
+
+## Error Recovery
+
+- Attempt to recover from errors when possible
+- Provide alternative actions on failure
+- Clean up resources on error
+- Maintain consistent state after errors
+- Log errors for debugging
+
+@kody-sync
