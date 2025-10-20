@@ -28,8 +28,8 @@ export const caseConverters = {
       .toLowerCase(),
 } as const;
 
-export type CaseType = keyof typeof caseConverters;
+export type CaseConverterType = keyof typeof caseConverters;
 
-export const convertTextCase = (text: string, caseType: CaseType): string => {
+export const convertTextCase = (text: string, caseType: CaseConverterType): string => {
   return caseConverters[caseType](text);
 };

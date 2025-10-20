@@ -9,10 +9,11 @@ import {
   replaceEditorText,
   insertTextAtCursor,
   convertTextCase,
-  type CaseType
-} from '../utils';
+  type CaseConverterType
+} from '@utils';
+import type { ExtensionContext } from '@types';
 
-export function registerQuickActions(context: vscode.ExtensionContext) {
+export function registerQuickActions(context: ExtensionContext) {
   // Comando para formatar JSON
   const formatJsonCommand = vscode.commands.registerCommand(
     'kodus-extension.formatJson',
@@ -72,7 +73,7 @@ export function registerQuickActions(context: vscode.ExtensionContext) {
 
       if (!selected) return;
 
-      const converted = convertTextCase(text, selected.label as CaseType);
+      const converted = convertTextCase(text, selected.label as CaseConverterType);
       await replaceEditorText(editor, editor.selection, converted);
       showInfo(`Text converted to ${selected.label}`);
     }

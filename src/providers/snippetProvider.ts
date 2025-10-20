@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
-import { getActiveEditor, showWarning } from '../utils';
+import { getActiveEditor, showWarning } from '@utils';
+import type { ExtensionContext, SnippetItem } from '@types';
 
-export function registerSnippetProvider(context: vscode.ExtensionContext) {
+export function registerSnippetProvider(context: ExtensionContext) {
   // Snippets úteis para desenvolvimento
   const snippets: { [key: string]: vscode.SnippetString } = {
     'console.log': new vscode.SnippetString('console.log($1);'),
