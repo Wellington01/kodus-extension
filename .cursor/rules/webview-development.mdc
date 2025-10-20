@@ -1,0 +1,65 @@
+---
+description: Webview Development Rules
+globs:
+alwaysApply: true
+---
+
+# Webview Development Rules
+
+## Webview Creation
+
+- Create webview panels with proper lifecycle management
+- Use retainContextWhenHidden for state preservation
+- Implement proper disposal in onDidDispose
+- Handle webview visibility changes appropriately
+- Use enableScripts only when necessary
+
+## HTML Content
+
+- Embed HTML content inline in TypeScript files
+- Use VSCode CSS variables for theming integration
+- Implement responsive design with CSS Grid/Flexbox
+- Ensure accessibility with proper ARIA attributes
+- Use semantic HTML structure
+
+## JavaScript Communication
+
+- Use acquireVsCodeApi() for extension communication
+- Implement message passing with structured data
+- Handle message validation and sanitization
+- Use proper event listeners with cleanup
+- Implement timeout handling for async operations
+
+## Security Considerations
+
+- Sanitize user input before processing
+- Validate message data structure
+- Use Content Security Policy when needed
+- Avoid eval() or similar dangerous functions
+- Implement proper error boundaries
+
+## Performance Optimization
+
+- Minimize DOM manipulation
+- Use efficient event delegation
+- Implement lazy loading for heavy content
+- Cache expensive operations
+- Use requestAnimationFrame for animations
+
+## Error Handling
+
+- Provide user-friendly error messages
+- Implement graceful fallbacks
+- Log errors for debugging
+- Handle network failures appropriately
+- Show loading states for async operations
+
+## VSCode Integration
+
+- Use VSCode theme variables consistently
+- Implement proper keyboard navigation
+- Follow VSCode UX guidelines
+- Use appropriate icons and styling
+- Ensure proper focus management
+
+@kody-sync

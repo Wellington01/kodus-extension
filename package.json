@@ -127,5 +127,8 @@
   "bugs": {
     "url": "https://github.com/kodustech/kodus-extension/issues"
   },
-  "homepage": "https://github.com/kodustech/kodus-extension#readme"
+  "homepage": "https://github.com/kodustech/kodus-extension#readme",
+  "dependencies": {
+    "lit": "^3.3.1"
+  }
 }

@@ -43,5 +43,8 @@ See other .cursor rules files for specific guidelines:
 - `.cursor/rules/security.mdc` - Security best practices
 - `.cursor/rules/architecture.mdc` - Code organization and architecture
 - `.cursor/rules/testing.mdc` - Testing and quality assurance
+- `.cursor/rules/webview-development.mdc` - Webview development guidelines
+- `.cursor/rules/ui-components.mdc` - UI components development rules
+- `.cursor/rules/configuration-validation.mdc` - Configuration file validation
 
 @kody-sync

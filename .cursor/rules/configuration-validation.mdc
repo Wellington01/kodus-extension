@@ -9,7 +9,7 @@ alwaysApply: true
 ## Package.json Validation
 
 - Validate that package.json contains required fields from template.json
-- Ensure version follows semantic versioning from CHANGELOG.md
+- Ensure version follows semantic versioning standards
 - Check that dependencies match those listed in package-lock.json
 - Verify that scripts are consistent with those defined in build-config.json
 - Ensure activationEvents match commands defined in commands-registry.json
@@ -28,12 +28,33 @@ alwaysApply: true
 - Ensure activation events are properly configured based on usage-patterns.json
 - Verify that contribution points match the extension manifest in extension-schema.json
 
+## Webview Configuration
+
+- Validate webview provider implementation against webview-schema.json
+- Check that all required methods are implemented in webviewProvider.ts
+- Ensure HTML content includes required elements and styles from webview-schema.json
+- Verify message handlers match the defined API in api-schema.json
+
+## Component Configuration
+
+- Validate Lit Element components against component-schema.json
+- Check that all required decorators and imports are present
+- Ensure component structure follows the defined schema
+- Verify event handling patterns match component-schema.json
+
 ## Build Configuration
 
-- Validate webpack.config.js against build-standards.json
-- Check that entry points match those defined in build-manifest.json
-- Ensure output configuration follows deployment-requirements.json
-- Verify that externals match those listed in dependencies-audit.json
+- Validate esbuild.config.js against build-schema.json
+- Check that entry points match those defined in build-schema.json
+- Ensure output configuration follows build-schema.json
+- Verify that externals match those listed in build-schema.json
+
+## Project Structure
+
+- Validate directory structure against project-layout.json
+- Check that all required files and directories exist
+- Ensure import paths match those defined in project-layout.json
+- Verify file patterns follow the established conventions
 
 ## Code Quality Configuration
 

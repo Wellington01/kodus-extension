@@ -1,0 +1,65 @@
+---
+description: UI Components Development Rules
+globs:
+alwaysApply: true
+---
+
+# UI Components Development Rules
+
+## Component Architecture
+
+- Use Lit Element for lightweight Web Components
+- Implement reactive properties with @property decorator
+- Use @state for internal component state
+- Follow single responsibility principle
+- Create composable and reusable components
+
+## Styling Guidelines
+
+- Use CSS Custom Properties for theming
+- Integrate with VSCode theme variables
+- Implement responsive design patterns
+- Use CSS Grid and Flexbox for layouts
+- Follow consistent spacing and typography
+
+## Component Communication
+
+- Use Custom Events for component interaction
+- Implement proper event bubbling and capturing
+- Use structured data for event payloads
+- Handle event cleanup in component lifecycle
+- Implement proper error handling for events
+
+## Accessibility
+
+- Use semantic HTML elements
+- Implement proper ARIA attributes
+- Ensure keyboard navigation support
+- Provide screen reader compatibility
+- Use appropriate color contrast ratios
+
+## Performance
+
+- Minimize DOM updates with Lit's rendering
+- Use efficient property change detection
+- Implement lazy loading for heavy components
+- Cache expensive computations
+- Use proper disposal patterns
+
+## Testing
+
+- Write unit tests for component logic
+- Test user interactions and events
+- Validate accessibility compliance
+- Test theme integration
+- Ensure cross-browser compatibility
+
+## Documentation
+
+- Document component props and events
+- Provide usage examples
+- Document styling customization options
+- Include accessibility notes
+- Maintain changelog for breaking changes
+
+@kody-sync
