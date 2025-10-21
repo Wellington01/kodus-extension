@@ -18,6 +18,9 @@
     "onCommand:kodus-extension.convertCase",
     "onCommand:kodus-extension.insertTimestamp",
     "onCommand:kodus-extension.insertSnippet",
+    "onCommand:kodus-extension.configureAI",
+    "onCommand:kodus-extension.startAIChat",
+    "onCommand:kodus-extension.analyzeCode",
     "onView:kodus-extension.webview"
   ],
   "main": "./out/extension.js",
@@ -46,6 +49,21 @@
       {
         "command": "kodus-extension.insertSnippet",
         "title": "Insert Code Snippet",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.configureAI",
+        "title": "Configure AI Assistant",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.startAIChat",
+        "title": "Start AI Chat",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.analyzeCode",
+        "title": "Analyze Code with AI",
         "category": "Kodus"
       }
     ],
