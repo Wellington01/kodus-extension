@@ -9,9 +9,10 @@ import {
   replaceEditorText,
   insertTextAtCursor,
   convertTextCase,
-  type CaseConverterType
+  type CaseConverterType,
 } from '@utils';
 import type { ExtensionContext } from '@types';
+import { registerAICommands } from './aiCommands';
 
 export function registerQuickActions(context: ExtensionContext) {
   // Comando para formatar JSON
@@ -32,10 +33,14 @@ export function registerQuickActions(context: ExtensionContext) {
       const text = editor.document.getText();
       const parsedJson = JSON.parse(text);
       const formatted = JSON.stringify(parsedJson, null, 2);
-      
+
       const edit = new vscode.WorkspaceEdit();
-      edit.replace(editor.document.uri, new vscode.Range(0, 0, editor.document.lineCount, 0), formatted);
-      
+      edit.replace(
+        editor.document.uri,
+        new vscode.Range(0, 0, editor.document.lineCount, 0),
+        formatted
+      );
+
       await vscode.workspace.applyEdit(edit);
       showInfo('JSON formatted successfully!');
     }
@@ -57,23 +62,26 @@ export function registerQuickActions(context: ExtensionContext) {
       }
 
       const text = getSelectedText(editor);
-      
+
       const items = [
         { label: 'UPPERCASE', description: 'Convert to uppercase' },
         { label: 'lowercase', description: 'Convert to lowercase' },
         { label: 'camelCase', description: 'Convert to camelCase' },
         { label: 'PascalCase', description: 'Convert to PascalCase' },
         { label: 'kebab-case', description: 'Convert to kebab-case' },
-        { label: 'snake_case', description: 'Convert to snake_case' }
+        { label: 'snake_case', description: 'Convert to snake_case' },
       ];
 
       const selected = await vscode.window.showQuickPick(items, {
-        placeHolder: 'Select case conversion type'
+        placeHolder: 'Select case conversion type',
       });
 
       if (!selected) return;
 
-      const converted = convertTextCase(text, selected.label as CaseConverterType);
+      const converted = convertTextCase(
+        text,
+        selected.label as CaseConverterType
+      );
       await replaceEditorText(editor, editor.selection, converted);
       showInfo(`Text converted to ${selected.label}`);
     }
@@ -95,5 +103,9 @@ export function registerQuickActions(context: ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(formatJsonCommand, convertCaseCommand, timestampCommand);
+  context.subscriptions.push(
+    formatJsonCommand,
+    convertCaseCommand,
+    timestampCommand
+  );
 }

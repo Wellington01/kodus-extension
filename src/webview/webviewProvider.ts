@@ -1,25 +1,30 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
+import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
 
   private _view?: vscode.WebviewView;
+  private aiManager: AIManager;
+  private aiProvider?: AIStreamProvider;
 
-  constructor(private readonly context: ExtensionContext) {}
+  constructor(private readonly context: ExtensionContext) {
+    this.aiManager = new AIManager(context);
+  }
 
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken,
+    _token: vscode.CancellationToken
   ) {
     this._view = webviewView;
 
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [
-        vscode.Uri.joinPath(this.context.extensionUri, 'media')
-      ]
+        vscode.Uri.joinPath(this.context.extensionUri, 'media'),
+      ],
     };
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
@@ -39,6 +44,15 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             return;
           case 'insertSnippet':
             this._insertSnippet();
+            return;
+          case 'initializeAI':
+            this._initializeAI(message.config);
+            return;
+          case 'sendAIMessage':
+            this._sendAIMessage(message.content, message.context);
+            return;
+          case 'disconnectAI':
+            this._disconnectAI();
             return;
         }
       },
@@ -717,10 +731,14 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     const text = editor.document.getText();
     const parsedJson = JSON.parse(text);
     const formatted = JSON.stringify(parsedJson, null, 2);
-    
+
     const edit = new vscode.WorkspaceEdit();
-    edit.replace(editor.document.uri, new vscode.Range(0, 0, editor.document.lineCount, 0), formatted);
-    
+    edit.replace(
+      editor.document.uri,
+      new vscode.Range(0, 0, editor.document.lineCount, 0),
+      formatted
+    );
+
     await vscode.workspace.applyEdit(edit);
     vscode.window.showInformationMessage('JSON formatted successfully!');
   }
@@ -738,18 +756,18 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     const text = editor.document.getText(editor.selection);
-    
+
     const items = [
       { label: 'UPPERCASE', description: 'Convert to uppercase' },
       { label: 'lowercase', description: 'Convert to lowercase' },
       { label: 'camelCase', description: 'Convert to camelCase' },
       { label: 'PascalCase', description: 'Convert to PascalCase' },
       { label: 'kebab-case', description: 'Convert to kebab-case' },
-      { label: 'snake_case', description: 'Convert to snake_case' }
+      { label: 'snake_case', description: 'Convert to snake_case' },
     ];
 
     const selected = await vscode.window.showQuickPick(items, {
-      placeHolder: 'Select case conversion type'
+      placeHolder: 'Select case conversion type',
     });
 
     if (!selected) return;
@@ -757,11 +775,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     // Import the converter function
     const { convertTextCase } = await import('@utils/caseConverter');
     const converted = convertTextCase(text, selected.label as any);
-    
+
     await editor.edit(editBuilder => {
       editBuilder.replace(editor.selection, converted);
     });
-    
+
     vscode.window.showInformationMessage(`Text converted to ${selected.label}`);
   }
 
@@ -776,7 +794,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     await editor.edit(editBuilder => {
       editBuilder.insert(editor.selection.active, timestamp);
     });
-    
+
     vscode.window.showInformationMessage('Timestamp inserted');
   }
 
@@ -797,54 +815,152 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       { label: 'for-loop', description: 'Insert for loop' },
       { label: 'component', description: 'Insert React component' },
       { label: 'useEffect', description: 'Insert useEffect hook' },
-      { label: 'useState', description: 'Insert useState hook' }
+      { label: 'useState', description: 'Insert useState hook' },
     ];
 
     const selected = await vscode.window.showQuickPick(snippets, {
-      placeHolder: 'Select a snippet to insert'
+      placeHolder: 'Select a snippet to insert',
     });
 
     if (!selected) return;
 
     // Create snippet string based on selection
     let snippetString: vscode.SnippetString;
-    
+
     switch (selected.label) {
       case 'console.log':
         snippetString = new vscode.SnippetString('console.log($1);');
         break;
       case 'function':
-        snippetString = new vscode.SnippetString('function ${1:name}($2) {\n\t$3\n}');
+        snippetString = new vscode.SnippetString(
+          'function ${1:name}($2) {\n\t$3\n}'
+        );
         break;
       case 'arrow-function':
-        snippetString = new vscode.SnippetString('const ${1:name} = ($2) => {\n\t$3\n};');
+        snippetString = new vscode.SnippetString(
+          'const ${1:name} = ($2) => {\n\t$3\n};'
+        );
         break;
       case 'async-function':
-        snippetString = new vscode.SnippetString('async function ${1:name}($2) {\n\t$3\n}');
+        snippetString = new vscode.SnippetString(
+          'async function ${1:name}($2) {\n\t$3\n}'
+        );
         break;
       case 'try-catch':
-        snippetString = new vscode.SnippetString('try {\n\t$1\n} catch (error) {\n\t$2\n}');
+        snippetString = new vscode.SnippetString(
+          'try {\n\t$1\n} catch (error) {\n\t$2\n}'
+        );
         break;
       case 'if-statement':
         snippetString = new vscode.SnippetString('if ($1) {\n\t$2\n}');
         break;
       case 'for-loop':
-        snippetString = new vscode.SnippetString('for (let ${1:i} = 0; ${1:i} < ${2:length}; ${1:i}++) {\n\t$3\n}');
+        snippetString = new vscode.SnippetString(
+          'for (let ${1:i} = 0; ${1:i} < ${2:length}; ${1:i}++) {\n\t$3\n}'
+        );
         break;
       case 'component':
-        snippetString = new vscode.SnippetString('const ${1:ComponentName} = () => {\n\treturn (\n\t\t<div>\n\t\t\t$2\n\t\t</div>\n\t);\n};');
+        snippetString = new vscode.SnippetString(
+          'const ${1:ComponentName} = () => {\n\treturn (\n\t\t<div>\n\t\t\t$2\n\t\t</div>\n\t);\n};'
+        );
         break;
       case 'useEffect':
-        snippetString = new vscode.SnippetString('useEffect(() => {\n\t$1\n}, [$2]);');
+        snippetString = new vscode.SnippetString(
+          'useEffect(() => {\n\t$1\n}, [$2]);'
+        );
         break;
       case 'useState':
-        snippetString = new vscode.SnippetString('const [${1:state}, set${1/(.*)/${1:/capitalize}/}] = useState($2);');
+        snippetString = new vscode.SnippetString(
+          'const [${1:state}, set${1/(.*)/${1:/capitalize}/}] = useState($2);'
+        );
         break;
       default:
         return;
     }
 
     await editor.insertSnippet(snippetString);
-    vscode.window.showInformationMessage(`Snippet "${selected.label}" inserted`);
+    vscode.window.showInformationMessage(
+      `Snippet "${selected.label}" inserted`
+    );
+  }
+
+  private async _initializeAI(config: any) {
+    try {
+      if (this.aiProvider) {
+        this.aiProvider.disconnect();
+      }
+
+      this.aiProvider = this.aiManager.createProvider('main', {
+        serverUrl: config.serverUrl,
+        apiKey: config.apiKey,
+        model: config.model,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+      });
+
+      // Configurar handlers para mensagens do AI
+      this.aiProvider.onMessage(message => {
+        if (this._view) {
+          this._view.webview.postMessage({
+            command: 'aiMessage',
+            message,
+          });
+        }
+      });
+
+      await this.aiProvider.connect();
+
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'aiInitialized',
+          connected: this.aiProvider.connected,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to initialize AI:', error);
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'aiError',
+          error: `Failed to initialize AI: ${error}`,
+        });
+      }
+    }
+  }
+
+  private async _sendAIMessage(content: string, context?: any) {
+    if (!this.aiProvider || !this.aiProvider.connected) {
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'aiError',
+          error: 'AI service not connected',
+        });
+      }
+      return;
+    }
+
+    try {
+      await this.aiProvider.sendMessage(content, context);
+    } catch (error) {
+      console.error('Failed to send AI message:', error);
+      if (this._view) {
+        this._view.webview.postMessage({
+          command: 'aiError',
+          error: `Failed to send message: ${error}`,
+        });
+      }
+    }
+  }
+
+  private _disconnectAI() {
+    if (this.aiProvider) {
+      this.aiProvider.disconnect();
+      this.aiProvider = undefined;
+    }
+
+    if (this._view) {
+      this._view.webview.postMessage({
+        command: 'aiDisconnected',
+      });
+    }
   }
 }
