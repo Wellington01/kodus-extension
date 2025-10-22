@@ -22,7 +22,7 @@ export interface CaseType {
   camelCase: string;
   PascalCase: string;
   'kebab-case': string;
-  'snake_case': string;
+  snake_case: string;
 }
 
 export type CaseConverterType = keyof CaseType;
@@ -59,3 +59,6 @@ export interface QuickPickItem extends vscode.QuickPickItem {
   value: string;
   action: () => void;
 }
+
+// Re-export AI types
+export * from './ai';

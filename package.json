@@ -21,6 +21,7 @@
     "onCommand:kodus-extension.configureAI",
     "onCommand:kodus-extension.startAIChat",
     "onCommand:kodus-extension.analyzeCode",
+    "onCommand:kodus-extension.explainCode",
     "onView:kodus-extension.webview"
   ],
   "main": "./out/extension.js",
@@ -64,6 +65,11 @@
       {
         "command": "kodus-extension.analyzeCode",
         "title": "Analyze Code with AI",
+        "category": "Kodus"
+      },
+      {
+        "command": "kodus-extension.explainCode",
+        "title": "Explain Code with AI",
         "category": "Kodus"
       }
     ],
@@ -112,18 +118,23 @@
     "watch": "node esbuild.config.js --watch",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "build": "node esbuild.config.js --production",
     "dev": "node esbuild.config.js --watch"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/node": "^24.9.0",
     "@types/vscode": "^1.105.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "esbuild": "^0.25.11",
     "eslint": "^9.38.0",
+    "jest": "^29.7.0",
     "prettier": "^3.6.2",
+    "ts-jest": "^29.1.2",
     "typescript": "^5.9.3"
   },
   "repository": {

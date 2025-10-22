@@ -203,7 +203,7 @@ export function registerAICommands(context: ExtensionContext) {
 
       if (!analysisType) return;
 
-      let customPrompt = '';
+      let customPrompt: string | undefined;
       if (analysisType.label === 'Custom Analysis') {
         customPrompt = await vscode.window.showInputBox({
           prompt: 'Enter custom analysis prompt',
