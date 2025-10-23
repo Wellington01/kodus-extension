@@ -4,10 +4,7 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "lib": [
-      "es2022",
-      "DOM"
-    ],
+    "lib": ["es2022", "DOM"],
     "module": "esnext",
     "moduleResolution": "Bundler",
     "noFallthroughCasesInSwitch": true,
@@ -24,35 +21,17 @@
     "useUnknownInCatchVariables": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@commands/*": [
-        "src/commands/*"
-      ],
-      "@providers/*": [
-        "src/providers/*"
-      ],
-      "@utils/*": [
-        "src/utils/*"
-      ],
-      "@types/*": [
-        "src/types/*"
-      ],
-      "@types": [
-        "src/types/index"
-      ],
-      "@webview/*": [
-        "src/webview/*"
-      ]
+      "@/*": ["src/*"],
+      "@commands/*": ["src/commands/*"],
+      "@providers/*": ["src/providers/*"],
+      "@utils/*": ["src/utils/*"],
+      "@types/*": ["src/types/*"],
+      "@types": ["src/types/index"],
+      "@webview/*": ["src/webview/*"],
+      "@services/*": ["src/services/*"],
+      "@services": ["src/services/index"]
     }
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    ".vscode-test",
-    "out"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", ".vscode-test", "out"]
 }

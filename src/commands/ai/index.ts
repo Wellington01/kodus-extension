@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
-import { AIConfigService } from '@services/aiConfigService.js';
+import { AIConfigService } from '@services/aiConfigService';
 import { AIAnalysisService } from '@services/aiAnalysisService';
 import { ConfigureAICommand } from './configureAICommand';
 import { StartAIChatCommand } from './startAIChatCommand';
 import { AnalyzeCodeCommand } from './analyzeCodeCommand';
+import { ExplainCodeCommand } from './explainCodeCommand';
 
 export class AICommandRegistry {
   private configService: AIConfigService;

@@ -7,11 +7,13 @@ A powerful, cross-platform VSCode extension that provides essential development 
 ## ✨ Features
 
 ### 🔧 Quick Actions
+
 - **Format JSON** - Format JSON files with proper indentation
 - **Convert Case** - Convert text between different cases (camelCase, PascalCase, kebab-case, etc.)
 - **Insert Timestamp** - Insert current ISO timestamp at cursor position
 
 ### 📝 Code Snippets
+
 - **JavaScript/TypeScript** - Common patterns and functions
 - **React** - Hooks, components, and lifecycle methods
 - **CSS** - Layout utilities, media queries, and common styles
@@ -19,6 +21,7 @@ A powerful, cross-platform VSCode extension that provides essential development 
 - **General** - Comments, TODOs, and documentation snippets
 
 ### ⌨️ Keyboard Shortcuts
+
 - `Ctrl+Shift+F` (Mac: `Cmd+Shift+F`) - Format JSON
 - `Ctrl+Shift+C` (Mac: `Cmd+Shift+C`) - Convert Case
 - `Ctrl+Shift+T` (Mac: `Cmd+Shift+T`) - Insert Timestamp
@@ -26,12 +29,14 @@ A powerful, cross-platform VSCode extension that provides essential development 
 ## 🚀 Installation
 
 ### From Source
+
 1. Clone this repository
 2. Install dependencies: `yarn install`
-3. Compile: `yarn compile`
+3. Start development: `yarn start`
 4. Press `F5` to run in Extension Development Host
 
 ### Package Installation
+
 ```bash
 vsce package
 code --install-extension kodus-extension-0.0.1.vsix
@@ -40,18 +45,20 @@ code --install-extension kodus-extension-0.0.1.vsix
 ## 🛠️ Development
 
 ### Prerequisites
+
 - Node.js 16+
 - Yarn package manager
 - VSCode 1.74+
 
 ### Setup
+
 ```bash
 yarn install
-yarn compile
-yarn watch  # For development
+yarn start
 ```
 
 ### Build
+
 ```bash
 yarn build
 vsce package
@@ -86,6 +93,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🌟 Why Open Source?
 
 This extension is built with open source principles in mind:
+
 - **No vendor lock-in** - Works with any editor that supports VSCode extensions
 - **No licensing restrictions** - Use freely in any project
 - **Community-driven** - Contributions and feedback welcome
@@ -94,6 +102,7 @@ This extension is built with open source principles in mind:
 ## 🆚 Comparison with Proprietary Tools
 
 Unlike proprietary extensions that may have licensing restrictions, Kodus Development Tools:
+
 - ✅ Works with VSCode, Cursor, and other compatible editors
 - ✅ No Microsoft-only restrictions
 - ✅ Free for commercial and personal use

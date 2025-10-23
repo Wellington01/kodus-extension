@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { AIConfig, AIMessage } from '@types/ai';
+import type { AIConfig, AIMessage } from '@types';
 
 export class AIChatService {
   constructor(private config: AIConfig) {}
@@ -22,7 +22,7 @@ export class AIChatService {
 
     // Handle messages from webview
     panel.webview.onDidReceiveMessage(
-      async (message) => {
+      async message => {
         await this.handleWebviewMessage(message, panel, context);
       },
       undefined,
@@ -39,7 +39,6 @@ export class AIChatService {
     message: any,
     panel: vscode.WebviewPanel,
     context: vscode.ExtensionContext
- context: vscode.ExtensionContext
   ): Promise<void> {
     switch (message.command) {
       case 'sendMessage':
@@ -61,10 +60,10 @@ export class AIChatService {
     try {
       // Aqui você implementaria a lógica real de envio para o AI
       console.log('AI message:', content);
-      
+
       // Simular resposta
       const response = await this.simulateAIResponse(content);
-      
+
       panel.webview.postMessage({
         command: 'aiResponse',
         content: response,
@@ -84,7 +83,7 @@ export class AIChatService {
   private async simulateAIResponse(message: string): Promise<string> {
     // Simular delay de processamento
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     return `AI Response to: "${message}"\n\nThis is a simulated response. In a real implementation, this would be sent to your AI service and streamed back in real-time.`;
   }
 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
-import { AIConfigService } from '@services/aiConfigService.ts';
-import { AIChatService } from '@services/aiChatService.ts';
+import { AIConfigService } from '@services/aiConfigService';
+import { AIChatService } from '@services/aiChatService';
 
 export class StartAIChatCommand {
   constructor(
