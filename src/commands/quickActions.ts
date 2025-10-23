@@ -12,7 +12,7 @@ import {
   type CaseConverterType,
 } from '@utils';
 import type { ExtensionContext } from '@types';
-import { registerAICommands } from './aiCommands';
+import { AICommandRegistry } from './ai';
 
 export function registerQuickActions(context: ExtensionContext) {
   // Comando para formatar JSON
@@ -108,4 +108,8 @@ export function registerQuickActions(context: ExtensionContext) {
     convertCaseCommand,
     timestampCommand
   );
+
+  // Registrar comandos de AI
+  const aiCommandRegistry = new AICommandRegistry(context);
+  aiCommandRegistry.registerCommands();
 }
