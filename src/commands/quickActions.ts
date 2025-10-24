@@ -10,9 +10,11 @@ import {
   insertTextAtCursor,
   convertTextCase,
   type CaseConverterType,
-} from '@utils';
+} from '../utils/index';
 import type { ExtensionContext } from '@types';
 import { AICommandRegistry } from './ai';
+import { registerTechnicalInfoCommand } from './technicalInfoCommand';
+import { registerAdvancedAnalysisCommand } from './advancedAnalysisCommand';
 
 export function registerQuickActions(context: ExtensionContext) {
   // Comando para formatar JSON
@@ -112,4 +114,10 @@ export function registerQuickActions(context: ExtensionContext) {
   // Registrar comandos de AI
   const aiCommandRegistry = new AICommandRegistry(context);
   aiCommandRegistry.registerCommands();
+
+  // Registrar comando de informações técnicas
+  registerTechnicalInfoCommand(context);
+
+  // Registrar comando de análise avançada
+  registerAdvancedAnalysisCommand(context);
 }
