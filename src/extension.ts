@@ -6,6 +6,7 @@ import type { ExtensionContext } from '@types';
 
 export function activate(context: ExtensionContext) {
   console.log('Kodus Development Tools is now active!');
+  console.log('VIOLATION: This is a console.log for testing the review process.');
 
   // Registrar comandos de ações rápidas
   registerQuickActions(context);
