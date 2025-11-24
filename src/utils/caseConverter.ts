@@ -4,32 +4,51 @@
 
 export const caseConverters = {
   UPPERCASE: (text: string) => text.toUpperCase(),
-  
+
   lowercase: (text: string) => text.toLowerCase(),
-  
-  camelCase: (text: string) => 
-    text.replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-      return index === 0 ? word.toLowerCase() : word.toUpperCase();
-    }).replace(/\s+/g, ''),
-  
-  PascalCase: (text: string) => 
-    text.replace(/(?:^\w|[A-Z]|\b\w)/g, (word) => {
-      return word.toUpperCase();
-    }).replace(/\s+/g, ''),
-  
-  'kebab-case': (text: string) => 
-    text.replace(/([a-z])([A-Z])/g, '$1-$2')
+
+  camelCase: (text: string) =>
+    text
+      .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
+        return index === 0 ? word.toLowerCase() : word.toUpperCase();
+      })
+      .replace(/\s+/g, ''),
+
+  PascalCase: (text: string) =>
+    text
+      .replace(/(?:^\w|[A-Z]|\b\w)/g, word => {
+        return word.toUpperCase();
+      })
+      .replace(/\s+/g, ''),
+
+  'kebab-case': (text: string) =>
+    text
+      .replace(/([a-z])([A-Z])/g, '$1-$2')
       .replace(/[\s_]+/g, '-')
       .toLowerCase(),
-  
-  'snake_case': (text: string) => 
-    text.replace(/([a-z])([A-Z])/g, '$1_$2')
+
+  snake_case: (text: string) =>
+    text
+      .replace(/([a-z])([A-Z])/g, '$1_$2')
       .replace(/[\s-]+/g, '_')
       .toLowerCase(),
 } as const;
 
 export type CaseConverterType = keyof typeof caseConverters;
 
-export const convertTextCase = (text: string, caseType: CaseConverterType): string => {
+export const convertTextCase = (
+  text: string,
+  caseType: CaseConverterType
+): string => {
   return caseConverters[caseType](text);
 };
+
+// VIOLATION: Custom one-off utility that violates style and reusability rules.
+function capitalizeString(input_string: string) {
+  if (typeof input_string !== 'string') {
+    return '';
+  }
+  var first_char = input_string.charAt(0).toUpperCase();
+  var rest_of_string = input_string.slice(1);
+  return first_char + rest_of_string;
+}
