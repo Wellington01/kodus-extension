@@ -33,9 +33,9 @@ This project follows a strict set of code style and formatting guidelines to mai
 - Use semicolons consistently
 - Limit line length to 80 characters
 
-## UI Components
+## Code Reusability and Shared Libraries
 
-- For UI elements, always prefer components from our shared MCP library. You should consult the available components at `@mcp<context7|resolve-library-uri>`.
-- Avoid creating custom, one-off components when a suitable alternative exists in the shared library.
+- For common functionalities, always prefer using packages and components from our shared MCP library. This applies to both front-end UI components and back-end libraries. You should consult the available resources at `@mcp<context7|resolve-library-uri>`.
+- Avoid creating custom, one-off solutions (components, functions, or libraries) when a suitable alternative exists in the shared library.
 
 @kody-sync
