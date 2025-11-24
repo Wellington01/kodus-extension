@@ -11,7 +11,7 @@ enabled: true
 ## Instructions
 Check for console.log statements in production TypeScript/JavaScript files.
 - Console logs should not appear in production code
-- Use proper logging libraries instead
+- Use proper logging libraries instead. For errors, a more robust logging approach is required to inform the user, similar to the error handling in `@file:src/services/aiChatService.ts`.
 - Allow console.log only in development utilities
 
 ## Examples

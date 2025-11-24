@@ -6,6 +6,8 @@ alwaysApply: true
 
 # Code Style and Formatting Rules
 
+This project follows a strict set of code style and formatting guidelines to maintain readability and consistency. All new code should adhere to the patterns demonstrated in files such as `@file:src/utils/editorHelpers.ts`.
+
 ## TypeScript Guidelines
 
 - Always use TypeScript strict mode
@@ -30,5 +32,10 @@ alwaysApply: true
 - Add trailing commas in objects and arrays
 - Use semicolons consistently
 - Limit line length to 80 characters
+
+## UI Components
+
+- For UI elements, always prefer components from our shared MCP library. You should consult the available components at `@mcp<context7|resolve-library-uri>`.
+- Avoid creating custom, one-off components when a suitable alternative exists in the shared library.
 
 @kody-sync

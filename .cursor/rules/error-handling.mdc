@@ -10,7 +10,7 @@ alwaysApply: true
 
 - Always handle errors; never ignore them silently.
 - Use specific error types instead of generic `Error`.
-- Provide meaningful error messages for debugging.
+- Provide meaningful error messages for debugging. A good example of this can be seen in the `processMessage` method within `@file:src/services/aiChatService.ts`.
 - Avoid exposing sensitive information in error messages.
 
 ## Try-Catch Blocks
