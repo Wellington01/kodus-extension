@@ -1,0 +1,27 @@
+---
+description: Error Handling Best Practices
+globs:
+alwaysApply: true
+---
+
+# Error Handling Best Practices
+
+## General Guidelines
+
+- Always handle errors; never ignore them silently.
+- Use specific error types instead of generic `Error`.
+- Provide meaningful error messages for debugging.
+- Avoid exposing sensitive information in error messages.
+
+## Try-Catch Blocks
+
+- Use `try-catch` for synchronous code that might throw.
+- Use `try-catch` with `async/await` for asynchronous operations.
+- Keep `try` blocks as small as possible.
+
+## API Error Responses
+
+- Return appropriate HTTP status codes (4xx for client errors, 5xx for server errors).
+- Include a consistent error response body, e.g., `{ "error": { "message": "..." } }`.
+
+@kody-sync

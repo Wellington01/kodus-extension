@@ -1,0 +1,34 @@
+---
+description: Code Style and Formatting Rules
+globs:
+alwaysApply: true
+---
+
+# Code Style and Formatting Rules
+
+## TypeScript Guidelines
+
+- Always use TypeScript strict mode
+- Prefer `const` over `let`, avoid `var` completely
+- Use async/await instead of promises when possible
+- Avoid try-catch blocks unless absolutely necessary for error handling
+- Write self-documenting code with clear variable names
+- Keep functions small and focused on a single responsibility
+
+## Naming Conventions
+
+- Use camelCase for variables and functions
+- Use PascalCase for classes and interfaces
+- Use UPPER_CASE for constants
+- Use kebab-case for file names
+- Use descriptive names that explain intent
+
+## Formatting
+
+- Use 2 spaces for indentation
+- Use single quotes for strings
+- Add trailing commas in objects and arrays
+- Use semicolons consistently
+- Limit line length to 80 characters
+
+@kody-sync
