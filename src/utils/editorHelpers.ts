@@ -51,3 +51,12 @@ export const getSelectedText = (editor: vscode.TextEditor): string => {
 export const isJsonFile = (editor: vscode.TextEditor): boolean => {
   return editor.document.languageId === 'json';
 };
+
+// VIOLATION: Function with multiple style issues for testing the review process.
+export function styleViolationFunction() {
+    var message = "This function violates multiple style rules.";
+      console.log( message );
+    if(true){
+    return message;
+    }
+}

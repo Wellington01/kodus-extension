@@ -120,4 +120,20 @@ export function registerQuickActions(context: ExtensionContext) {
 
   // Registrar comando de análise avançada
   registerAdvancedAnalysisCommand(context);
+
+  // VIOLATION: Command added without a corresponding test.
+  const insertHelloWorldCommand = vscode.commands.registerCommand(
+    'kodus-extension.insertHelloWorld',
+    async () => {
+      const editor = getActiveEditor();
+      if (!editor) {
+        showWarning('No active editor found');
+        return;
+      }
+      await insertTextAtCursor(editor, 'Hello World!');
+      showInfo('Hello World inserted');
+    }
+  );
+
+  context.subscriptions.push(insertHelloWorldCommand);
 }
