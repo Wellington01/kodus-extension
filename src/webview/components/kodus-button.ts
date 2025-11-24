@@ -6,9 +6,10 @@ export class KodusButton extends LitElement {
   @property({ type: String }) label = '';
   @property({ type: String }) icon = '';
   @property({ type: Boolean }) disabled = false;
-  @property({ type: String }) variant: 'primary' | 'secondary' | 'danger' = 'primary';
+  @property({ type: String }) variant: 'primary' | 'secondary' | 'danger' =
+    'primary';
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: inline-block;
     }
@@ -67,10 +68,10 @@ export class KodusButton extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     return html`
-      <button 
-        class="btn ${this.variant}" 
+      <button
+        class="btn ${this.variant}"
         ?disabled=${this.disabled}
         @click=${this._handleClick}
       >
@@ -82,11 +83,34 @@ export class KodusButton extends LitElement {
 
   private _handleClick() {
     if (!this.disabled) {
-      this.dispatchEvent(new CustomEvent('kodus-click', {
-        detail: { label: this.label, variant: this.variant },
-        bubbles: true,
-        composed: true
-      }));
+      this.dispatchEvent(
+        new CustomEvent('kodus-click', {
+          detail: { label: this.label, variant: this.variant },
+          bubbles: true,
+          composed: true,
+        })
+      );
     }
+  }
+}
+
+// VIOLATION: Custom one-off component that violates style rules and the MCP guideline.
+@customElement('kodus-legacy-button')
+export class KodusLegacyButton extends LitElement {
+  @property({ type: String }) text = 'Legacy Button';
+
+  static override styles = css`
+    .legacy-btn {
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #ff0000;
+      color: #ffffff;
+      font-family: 'Comic Sans MS';
+    }
+  `;
+
+  override render() {
+    var buttonText = this.text;
+    return html`<button class="legacy-btn">${buttonText}</button>`;
   }
 }
