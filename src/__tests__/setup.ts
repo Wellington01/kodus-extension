@@ -21,6 +21,11 @@ jest.mock('vscode', () => ({
     openTextDocument: jest.fn(),
     applyEdit: jest.fn(),
   },
+  env: {
+    clipboard: {
+      writeText: jest.fn(),
+    },
+  },
   ExtensionContext: jest.fn(),
   ViewColumn: {
     One: 1,
@@ -31,7 +36,7 @@ jest.mock('vscode', () => ({
   WorkspaceEdit: jest.fn(),
   Range: jest.fn(),
   SnippetString: jest.fn(),
-}));
+}), { virtual: true });
 
 // Global test utilities
 global.createMockExtensionContext = () => ({

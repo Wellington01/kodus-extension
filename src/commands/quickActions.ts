@@ -15,6 +15,7 @@ import type { ExtensionContext } from '@types';
 import { AICommandRegistry } from './ai';
 import { registerTechnicalInfoCommand } from './technicalInfoCommand';
 import { registerAdvancedAnalysisCommand } from './advancedAnalysisCommand';
+import { registerPrCommentCommands } from './prCommentCommands';
 
 export function registerQuickActions(context: ExtensionContext) {
   // Comando para formatar JSON
@@ -120,6 +121,9 @@ export function registerQuickActions(context: ExtensionContext) {
 
   // Registrar comando de análise avançada
   registerAdvancedAnalysisCommand(context);
+
+  // Registrar comandos para comentários de PR
+  registerPrCommentCommands(context);
 
   // VIOLATION: Command added without a corresponding test.
   const insertHelloWorldCommand = vscode.commands.registerCommand(
