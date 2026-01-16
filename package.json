@@ -22,8 +22,6 @@
     "onCommand:kodus-extension.startAIChat",
     "onCommand:kodus-extension.analyzeCode",
     "onCommand:kodus-extension.explainCode",
-    "onCommand:kodus-extension.technicalInfo",
-    "onCommand:kodus-extension.advancedAnalysis",
     "onView:kodus-extension.webview"
   ],
   "main": "./out/extension.js",
@@ -51,7 +49,6 @@
       },
       {
         "command": "kodus-extension.insertSnippet",
-        "title": "Insert Code Snippet",
         "category": "Kodus"
       },
       {
