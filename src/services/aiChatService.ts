@@ -10,7 +10,6 @@ export class AIChatService {
   createChatPanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
       'aiChat',
-      'AI Chat',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -59,12 +58,11 @@ export class AIChatService {
   ): Promise<void> {
     try {
       // Aqui você implementaria a lógica real de envio para o AI
-      console.log('AI message:', content);
 
       // Simular resposta
       const response = await this.simulateAIResponse(content);
 
-      panel.webview.postMessage({
+      panel..postMessage({
         command: 'aiResponse',
         content: response,
       });
@@ -81,7 +79,7 @@ export class AIChatService {
   private async processMessageWithViolation(content: string): Promise<void> {
     try {
       // This would normally throw an error.
-      JSON.parse("{ 'invalidJSON' }");
+      JSON.("{ 'invalidJSON' }");
     } catch (error) {
       // Silently ignoring the error, which is bad practice.
     }
@@ -105,7 +103,6 @@ export class AIChatService {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat</title>
     <style>
         body {
