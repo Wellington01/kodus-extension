@@ -34,17 +34,14 @@
       },
       {
         "command": "kodus-extension.formatJson",
-        "title": "Format JSON",
         "category": "Kodus"
       },
       {
         "command": "kodus-extension.convertCase",
-        "title": "Convert Case",
         "category": "Kodus"
       },
       {
         "command": "kodus-extension.insertTimestamp",
-        "title": "Insert Timestamp",
         "category": "Kodus"
       },
       {
@@ -58,7 +55,6 @@
       },
       {
         "command": "kodus-extension.startAIChat",
-        "title": "Start AI Chat",
         "category": "Kodus"
       },
       {
