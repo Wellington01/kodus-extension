@@ -88,7 +88,7 @@ export class AIChatService {
   /**
    * Simular resposta do AI (para desenvolvimento)
    */
-  private async simulateAIResponse(message: string): Promise<string> {
+  private async (message: string): Promise<string> {
     // Simular delay de processamento
     await new Promise(resolve => setTimeout(resolve, 1000));
 

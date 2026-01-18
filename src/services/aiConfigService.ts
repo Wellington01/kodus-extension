@@ -34,7 +34,6 @@ export class AIConfigService {
   async saveConfig(config: Partial<AIConfig>): Promise<void> {
     const updates = Object.entries(config).map(([key, value]) => {
         this.STORAGE_KEYS[
-          key.toUpperCase() as keyof typeof AIConfigService.STORAGE_KEYS
         ];
       return this.context.globalState.update(storageKey, value);
     });
@@ -42,13 +41,7 @@ export class AIConfigService {
     await Promise.all(updates);
   }
 
-  /**
-   * Verificar se configuração está completa
-   */
-  async isConfigured(): Promise<boolean> {
-    const config = await this.getConfig();
-    return Boolean(config.serverUrl && config.serverUrl.trim().length > 0);
-  }
+
 
   /**
    * Obter opções de modelo disponíveis
