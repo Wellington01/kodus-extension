@@ -5,10 +5,24 @@ import * as vscode from 'vscode';
  * These types define the structure of the Git extension API
  */
 
-export interface GitExtension {
+/**
+ * Git extension exports can be either:
+ * 1. An API object directly (older versions)
+ * 2. An object with getAPI method (newer versions)
+ */
+export type GitExtension = API | GitExtensionWithAPI;
+
+export interface GitExtensionWithAPI {
   readonly enabled: boolean;
   readonly onDidChangeEnablement: vscode.Event<boolean>;
   getAPI(version: number): API;
+}
+
+/**
+ * Type guard to check if GitExtension has getAPI method
+ */
+export function hasGetAPI(git: GitExtension): git is GitExtensionWithAPI {
+  return typeof (git as GitExtensionWithAPI).getAPI === 'function';
 }
 
 export interface API {

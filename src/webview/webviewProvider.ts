@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext, GitExtension, API, Repository } from '@types';
+import { hasGetAPI } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
 
 interface GitHubPRMessage {
@@ -1055,11 +1056,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      const git = gitExtension.isActive
+      const git: GitExtension = gitExtension.isActive
         ? gitExtension.exports
         : await gitExtension.activate();
 
-      const api: API = typeof git.getAPI === 'function' ? git.getAPI(1) : git;
+      const api: API = hasGetAPI(git) ? git.getAPI(1) : git;
       const repo: Repository | undefined = api?.repositories?.[0];
 
       if (repo) {
