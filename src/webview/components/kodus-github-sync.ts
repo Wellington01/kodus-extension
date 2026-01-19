@@ -7,6 +7,7 @@ export class KodusGithubSync extends LitElement {
   @property({ type: String }) branch = 'main';
   @state() private prs: any[] = [];
   @state() private loading = false;
+  @state() private resyncing = false;
   @state() private error: string | null = null;
   @state() private lastSync: Date | null = null;
 
@@ -79,6 +80,11 @@ export class KodusGithubSync extends LitElement {
 
     .btn.success {
       background: var(--vscode-gitDecoration-addedResourceForeground);
+      color: var(--vscode-editor-background);
+    }
+
+    .btn.resync {
+      background: var(--vscode-gitDecoration-modifiedResourceForeground);
       color: var(--vscode-editor-background);
     }
 
@@ -195,7 +201,6 @@ export class KodusGithubSync extends LitElement {
   `;
 
   render() {
-    abortController
     return html`
       <div class="sync-container">
         <div class="sync-header">
@@ -210,15 +215,24 @@ export class KodusGithubSync extends LitElement {
         <div class="sync-actions">
           <button 
             class="btn primary" 
-            ?disabled=${this.loading}
+            ?disabled=${this.loading || this.resyncing}
             @click=${this._fetchPRs}
           >
             ${this.loading ? 'Syncing...' : 'Sync PRs'}
           </button>
           
           <button 
+            class="btn resync" 
+            ?disabled=${this.loading || this.resyncing}
+            @click=${this._resyncPRs}
+            title="Force a complete resync, clearing cached data"
+          >
+            ${this.resyncing ? 'Resyncing...' : 'Resync'}
+          </button>
+          
+          <button 
             class="btn secondary" 
-            ?disabled=${this.loading}
+            ?disabled=${this.loading || this.resyncing}
             @click=${this._createPR}
           >
             Create PR
@@ -226,17 +240,17 @@ export class KodusGithubSync extends LitElement {
           
           <button 
             class="btn success" 
-            ?disabled=${this.loading}
+            ?disabled=${this.loading || this.resyncing}
             @click=${this._mergePRs}
           >
             Auto Merge
           </button>
         </div>
 
-        ${this.loading ? html`
+        ${this.loading || this.resyncing ? html`
           <div class="loading">
             <div class="spinner"></div>
-            Syncing with GitHub...
+            ${this.resyncing ? 'Resyncing with GitHub (clearing cache)...' : 'Syncing with GitHub...'}
           </div>
         ` : ''}
 
@@ -279,8 +293,8 @@ export class KodusGithubSync extends LitElement {
       const result = await this._sendMessageToExtension('fetch-github-prs', {
         repo: this.repo,
         branch: this.branch
-      });
-      
+      }) as { prs?: any[] };
+
       this.prs = result.prs || [];
       this.lastSync = new Date();
     } catch (err) {
@@ -290,13 +304,37 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
+  private async _resyncPRs() {
+    this.resyncing = true;
+    this.error = null;
+
+    // Clear existing data before resyncing
+    this.prs = [];
+    this.lastSync = null;
+
+    try {
+      const result = await this._sendMessageToExtension('resync-github-prs', {
+        repo: this.repo,
+        branch: this.branch,
+        force: true
+      }) as { prs?: any[] };
+
+      this.prs = result.prs || [];
+      this.lastSync = new Date();
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Failed to resync PRs';
+    } finally {
+      this.resyncing = false;
+    }
+  }
+
   private async _createPR() {
     try {
       await this._sendMessageToExtension('create-github-pr', {
         repo: this.repo,
         branch: this.branch
       });
-      
+
       // Refresh PRs after creating
       await this._fetchPRs();
     } catch (err) {
@@ -310,7 +348,7 @@ export class KodusGithubSync extends LitElement {
         repo: this.repo,
         branch: this.branch
       });
-      
+
       // Refresh PRs after merging
       await this._fetchPRs();
     } catch (err) {
@@ -330,7 +368,7 @@ export class KodusGithubSync extends LitElement {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'today';
     } else if (diffDays === 1) {
@@ -345,10 +383,10 @@ export class KodusGithubSync extends LitElement {
   private _sendMessageToExtension(command: string, data: any) {
     return new Promise((resolve, reject) => {
       const message = { command, data };
-      
+
       // Send message to webview provider
       window.parent.postMessage(message, '*');
-      
+
       // Listen for response
       const handleResponse = (event: MessageEvent) => {
         if (event.data.command === `${command}-response`) {
@@ -360,9 +398,9 @@ export class KodusGithubSync extends LitElement {
           }
         }
       };
-      
+
       window.addEventListener('message', handleResponse);
-      
+
       // Timeout after 30 seconds
       setTimeout(() => {
         window.removeEventListener('message', handleResponse);

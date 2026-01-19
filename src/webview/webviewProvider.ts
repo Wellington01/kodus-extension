@@ -54,6 +54,25 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
           case 'disconnectAI':
             this._disconnectAI();
             return;
+          case 'fetchGitHubPRs':
+            this._fetchGitHubPRs(webviewView.webview, false);
+            return;
+          case 'resyncGitHubPRs':
+            this._fetchGitHubPRs(webviewView.webview, true);
+            return;
+          case 'createGitHubPR':
+            this._createGitHubPR(webviewView.webview);
+            return;
+          case 'autoMergePRs':
+            this._autoMergePRs(webviewView.webview);
+            return;
+          case 'openGitHubPR':
+            this._openGitHubPR(message.prNumber);
+            return;
+          case 'fetch-github-prs':
+          case 'resync-github-prs':
+            this._handleGitHubPRMessage(webviewView.webview, message);
+            return;
         }
       },
       undefined,
@@ -400,6 +419,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             </div>
             <div class="mcp-tool-description">Sync and manage pull requests with GitHub</div>
             <button class="btn" onclick="fetchGitHubPRs()">Sync PRs</button>
+            <button class="btn" onclick="resyncGitHubPRs()" style="background: var(--vscode-gitDecoration-modifiedResourceForeground);">Resync</button>
             <button class="btn secondary" onclick="createGitHubPR()">Create PR</button>
             <button class="btn" onclick="autoMergePRs()">Auto Merge</button>
             
@@ -462,6 +482,21 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             
             vscode.postMessage({
                 command: 'fetchGitHubPRs'
+            });
+        }
+        
+        function resyncGitHubPRs() {
+            const loadingDiv = document.getElementById('github-loading');
+            const errorDiv = document.getElementById('github-error');
+            const prsDiv = document.getElementById('github-prs');
+            
+            loadingDiv.style.display = 'flex';
+            loadingDiv.innerHTML = '<div class="spinner"></div> Resyncing with GitHub (clearing cache)...';
+            errorDiv.style.display = 'none';
+            prsDiv.innerHTML = '';
+            
+            vscode.postMessage({
+                command: 'resyncGitHubPRs'
             });
         }
         
@@ -960,6 +995,99 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     if (this._view) {
       this._view.webview.postMessage({
         command: 'aiDisconnected',
+      });
+    }
+  }
+
+  private async _fetchGitHubPRs(webview: vscode.Webview, forceResync: boolean = false) {
+    try {
+      // Simulate GitHub API call - in a real implementation, this would call the GitHub API
+      const prs = forceResync ? [] : [];
+
+      // For now, return empty array - this should be replaced with actual GitHub API integration
+      webview.postMessage({
+        command: 'githubPRsResult',
+        prs: prs,
+      });
+    } catch (error) {
+      webview.postMessage({
+        command: 'githubPRsResult',
+        error: error instanceof Error ? error.message : 'Failed to fetch PRs',
+      });
+    }
+  }
+
+  private async _createGitHubPR(webview: vscode.Webview) {
+    try {
+      // This should create a PR via GitHub API
+      vscode.window.showInformationMessage('Create PR functionality not yet implemented');
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to create PR: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private async _autoMergePRs(webview: vscode.Webview) {
+    try {
+      // This should auto-merge PRs via GitHub API
+      vscode.window.showInformationMessage('Auto merge functionality not yet implemented');
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to auto merge PRs: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private async _openGitHubPR(prNumber: number) {
+    try {
+      // This should open the PR in the browser
+      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      if (!gitExtension) {
+        vscode.window.showWarningMessage('Git extension not found');
+        return;
+      }
+
+      const git = gitExtension.isActive
+        ? gitExtension.exports
+        : await gitExtension.activate();
+
+      const api = typeof git.getAPI === 'function' ? git.getAPI(1) : git;
+      const repo = api?.repositories?.[0];
+
+      if (repo) {
+        const remoteUrl = repo.state.remotes[0]?.fetchUrl || repo.state.remotes[0]?.pushUrl;
+        if (remoteUrl) {
+          const url = remoteUrl.replace(/\.git$/, '').replace(/^git@github\.com:/, 'https://github.com/');
+          const prUrl = `${url}/pull/${prNumber}`;
+          vscode.env.openExternal(vscode.Uri.parse(prUrl));
+        }
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to open PR: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private async _handleGitHubPRMessage(webview: vscode.Webview, message: any) {
+    const command = message.command;
+    const data = message.data || {};
+    const forceResync = command === 'resync-github-prs' || data.force === true;
+
+    try {
+      // Handle message from Lit component
+      const prs = forceResync ? [] : [];
+
+      // Send response back to component
+      webview.postMessage({
+        command: `${command}-response`,
+        result: { prs },
+      });
+    } catch (error) {
+      webview.postMessage({
+        command: `${command}-response`,
+        error: error instanceof Error ? error.message : 'Failed to process request',
       });
     }
   }
