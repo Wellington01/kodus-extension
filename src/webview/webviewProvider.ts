@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { ExtensionContext } from '@types';
+import type { ExtensionContext, GitExtension, API, Repository } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
 
 interface GitHubPRMessage {
@@ -1049,7 +1049,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private async _openGitHubPR(prNumber: number) {
     try {
       // This should open the PR in the browser
-      const gitExtension = vscode.extensions.getExtension('vscode.git');
+      const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
       if (!gitExtension) {
         vscode.window.showWarningMessage('Git extension not found');
         return;
@@ -1059,8 +1059,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
         ? gitExtension.exports
         : await gitExtension.activate();
 
-      const api = typeof git.getAPI === 'function' ? git.getAPI(1) : git;
-      const repo = api?.repositories?.[0];
+      const api: API = typeof git.getAPI === 'function' ? git.getAPI(1) : git;
+      const repo: Repository | undefined = api?.repositories?.[0];
 
       if (repo) {
         const remoteUrl = repo.state.remotes[0]?.fetchUrl || repo.state.remotes[0]?.pushUrl;
