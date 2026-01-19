@@ -2,6 +2,13 @@ import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
 
+interface GitHubPRMessage {
+  command: 'fetch-github-prs' | 'resync-github-prs';
+  data?: {
+    force?: boolean;
+  };
+}
+
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
 
@@ -1070,7 +1077,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _handleGitHubPRMessage(webview: vscode.Webview, message: any) {
+  private async _handleGitHubPRMessage(webview: vscode.Webview, message: GitHubPRMessage) {
     const command = message.command;
     const data = message.data || {};
     const forceResync = command === 'resync-github-prs' || data.force === true;
