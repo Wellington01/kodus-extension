@@ -62,7 +62,7 @@ export class AIChatService {
       // Simular resposta
       const response = await this.simulateAIResponse(content);
 
-      panel..postMessage({
+      panel.webview.postMessage({
         command: 'aiResponse',
         content: response,
       });
@@ -88,7 +88,7 @@ export class AIChatService {
   /**
    * Simular resposta do AI (para desenvolvimento)
    */
-  private async (message: string): Promise<string> {
+  private async simulateAIResponse(message: string): Promise<string> {
     // Simular delay de processamento
     await new Promise(resolve => setTimeout(resolve, 1000));
 
