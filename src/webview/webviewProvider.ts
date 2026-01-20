@@ -79,7 +79,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             return;
           case 'fetch-github-prs':
           case 'resync-github-prs':
-            this._handleGitHubPRMessage(webviewView.webview, message);
+            this._handleGitHubPRMessage(webviewView.webview, message as GitHubPRMessage);
             return;
         }
       },
