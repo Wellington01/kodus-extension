@@ -1,11 +1,25 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+interface PullRequest {
+  title: string;
+  number: number;
+  state: 'open' | 'closed' | 'merged';
+  user: {
+    login: string;
+  };
+  updated_at: string;
+}
+
+interface GitHubPRResponse {
+  prs?: PullRequest[];
+}
+
 @customElement('kodus-github-sync')
 export class KodusGithubSync extends LitElement {
   @property({ type: String }) repo = '';
   @property({ type: String }) branch = 'main';
-  @state() private prs: any[] = [];
+  @state() private prs: PullRequest[] = [];
   @state() private loading = false;
   @state() private resyncing = false;
   @state() private error: string | null = null;
@@ -293,7 +307,7 @@ export class KodusGithubSync extends LitElement {
       const result = await this._sendMessageToExtension('fetch-github-prs', {
         repo: this.repo,
         branch: this.branch
-      }) as { prs?: any[] };
+      }) as GitHubPRResponse;
 
       this.prs = result.prs || [];
       this.lastSync = new Date();
@@ -317,7 +331,7 @@ export class KodusGithubSync extends LitElement {
         repo: this.repo,
         branch: this.branch,
         force: true
-      }) as { prs?: any[] };
+      }) as GitHubPRResponse;
 
       this.prs = result.prs || [];
       this.lastSync = new Date();
@@ -356,7 +370,7 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _openPR(pr: any) {
+  private _openPR(pr: PullRequest) {
     this._sendMessageToExtension('open-github-pr', {
       repo: this.repo,
       prNumber: pr.number
@@ -380,7 +394,7 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _sendMessageToExtension(command: string, data: any) {
+  private _sendMessageToExtension(command: string, data: Record<string, unknown>) {
     return new Promise((resolve, reject) => {
       const message = { command, data };
 
