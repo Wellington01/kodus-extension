@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { AIConfig, AIMessage } from '@types';
 
 export class AIChatService {
-  constructor(private config: AIConfig) {}
+  constructor(private config: AIConfig) { }
 
   /**
    * Criar webview panel para chat AI

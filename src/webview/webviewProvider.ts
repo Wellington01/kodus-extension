@@ -1009,8 +1009,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _fetchGitHubPRs(webview: vscode.Webview, forceResync: boolean = false) {
     try {
-      // Simulate GitHub API call - in a real implementation, this would call the GitHub API
-      const prs = forceResync ? [] : [];
+      // TODO: Implement GitHub API call and define a proper type for PRs.
+      // The `forceResync` flag should be used to either fetch fresh data or use a local cache.
+      const prs: unknown[] = []; // Placeholder: This needs to be replaced with actual data fetching.
 
       // For now, return empty array - this should be replaced with actual GitHub API integration
       webview.postMessage({
@@ -1084,8 +1085,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     const forceResync = command === 'resync-github-prs' || data.force === true;
 
     try {
-      // Handle message from Lit component
-      const prs = forceResync ? [] : [];
+      // TODO: Implement GitHub API call and define a proper type for PRs.
+      // The `forceResync` flag should be used to either fetch fresh data or use a local cache.
+      const prs: unknown[] = []; // Placeholder: This needs to be replaced with actual data fetching.
 
       // Send response back to component
       webview.postMessage({
