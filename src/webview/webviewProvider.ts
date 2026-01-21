@@ -486,6 +486,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             const errorDiv = document.getElementById('github-error');
             const prsDiv = document.getElementById('github-prs');
             
+            // Reset loading div to original state
+            loadingDiv.innerHTML = '<div class="spinner"></div> Syncing with GitHub...';
             loadingDiv.style.display = 'flex';
             errorDiv.style.display = 'none';
             prsDiv.innerHTML = '';
@@ -500,8 +502,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             const errorDiv = document.getElementById('github-error');
             const prsDiv = document.getElementById('github-prs');
             
-            loadingDiv.style.display = 'flex';
+            // Set loading div content for resync operation
             loadingDiv.innerHTML = '<div class="spinner"></div> Resyncing with GitHub (clearing cache)...';
+            loadingDiv.style.display = 'flex';
             errorDiv.style.display = 'none';
             prsDiv.innerHTML = '';
             
