@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
-import type { ExtensionContext, GitExtension, API, Repository } from '@types';
+import type {
+  ExtensionContext,
+  GitExtension,
+  API,
+  Repository,
+  MainWebviewMessage,
+  GitHubPRMessage,
+  InitializeAICommand,
+} from '@types';
 import { hasGetAPI } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
-
-interface GitHubPRMessage {
-  command: 'fetch-github-prs' | 'resync-github-prs';
-  data?: {
-    force?: boolean;
-  };
-}
+import type { CaseConverterType } from '@utils/caseConverter';
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
@@ -39,7 +41,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     // Handle messages from the webview
     webviewView.webview.onDidReceiveMessage(
-      message => {
+      (message: MainWebviewMessage) => {
         switch (message.command) {
           case 'formatJson':
             this._formatJson();
@@ -54,7 +56,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             this._insertSnippet();
             return;
           case 'initializeAI':
-            this._initializeAI(message.config);
+            this._initializeAI(message);
             return;
           case 'sendAIMessage':
             this._sendAIMessage(message.content, message.context);
@@ -817,7 +819,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     // Import the converter function
     const { convertTextCase } = await import('@utils/caseConverter');
-    const converted = convertTextCase(text, selected.label as any);
+    const converted = convertTextCase(text, selected.label as CaseConverterType);
 
     await editor.edit(editBuilder => {
       editBuilder.replace(editor.selection, converted);
@@ -927,18 +929,18 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     );
   }
 
-  private async _initializeAI(config: any) {
+  private async _initializeAI(message: InitializeAICommand) {
     try {
       if (this.aiProvider) {
         this.aiProvider.disconnect();
       }
 
       this.aiProvider = this.aiManager.createProvider('main', {
-        serverUrl: config.serverUrl,
-        apiKey: config.apiKey,
-        model: config.model,
-        temperature: config.temperature,
-        maxTokens: config.maxTokens,
+        serverUrl: message.config.serverUrl,
+        apiKey: message.config.apiKey,
+        model: message.config.model,
+        temperature: message.config.temperature,
+        maxTokens: message.config.maxTokens,
       });
 
       // Configurar handlers para mensagens do AI
@@ -970,7 +972,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _sendAIMessage(content: string, context?: any) {
+  private async _sendAIMessage(content: string, context?: Record<string, unknown>) {
     if (!this.aiProvider || !this.aiProvider.connected) {
       if (this._view) {
         this._view.webview.postMessage({
