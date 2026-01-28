@@ -90,6 +90,7 @@ export interface GitHubPRMessage extends WebviewMessage {
   data?: {
     repo?: string;
     branch?: string;
+    requestId?: string;
     force?: boolean;
   };
 }
@@ -99,6 +100,7 @@ export interface CreateGitHubPRMessage extends WebviewMessage {
   data?: {
     repo?: string;
     branch?: string;
+    requestId?: string;
   };
 }
 
@@ -107,6 +109,7 @@ export interface AutoMergeGitHubPRsMessage extends WebviewMessage {
   data?: {
     repo?: string;
     branch?: string;
+    requestId?: string;
   };
 }
 
@@ -115,6 +118,27 @@ export interface OpenGitHubPRMessage extends WebviewMessage {
   data: {
     prNumber: number;
     repo?: string;
+    url?: string;
+    requestId?: string;
+  };
+}
+
+export interface ExecuteCommandMessage extends WebviewMessage {
+  command: 'executeCommand';
+  commandName: string;
+  args?: unknown[];
+}
+
+export interface ExecuteMcpToolCommand extends WebviewMessage {
+  command: 'executeMcpTool';
+  toolName: string;
+}
+
+export interface ExecuteMcpToolMessage extends WebviewMessage {
+  command: 'execute-mcp-tool';
+  data?: {
+    toolName?: string;
+    requestId?: string;
   };
 }
 
@@ -137,4 +161,7 @@ export type MainWebviewMessage =
   | GitHubPRMessage
   | CreateGitHubPRMessage
   | AutoMergeGitHubPRsMessage
-  | OpenGitHubPRMessage;
+  | OpenGitHubPRMessage
+  | ExecuteCommandMessage
+  | ExecuteMcpToolCommand
+  | ExecuteMcpToolMessage;

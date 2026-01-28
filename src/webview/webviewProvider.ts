@@ -107,34 +107,71 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
           case 'openGitHubPR':
             this._openGitHubPR(message.prNumber);
             return;
+          case 'executeCommand':
+            this._executeCommand(message.commandName, message.args);
+            return;
+          case 'executeMcpTool':
+            this._handleExecuteMcpTool(
+              webviewView.webview,
+              message.toolName,
+              undefined
+            );
+            return;
           case 'create-github-pr':
-            this._handleGitHubActionMessage(webviewView.webview, 'create-github-pr', async () => {
-              await this._createGitHubPR(webviewView.webview);
-              return { ok: true };
-            });
+            this._handleGitHubActionMessage(
+              webviewView.webview,
+              'create-github-pr',
+              async () => {
+                await this._createGitHubPR(webviewView.webview);
+                return { ok: true };
+              },
+              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
+            );
             return;
           case 'auto-merge-prs':
-            this._handleGitHubActionMessage(webviewView.webview, 'auto-merge-prs', async () => {
-              await this._autoMergePRs(webviewView.webview);
-              return { ok: true };
-            });
+            this._handleGitHubActionMessage(
+              webviewView.webview,
+              'auto-merge-prs',
+              async () => {
+                await this._autoMergePRs(webviewView.webview);
+                return { ok: true };
+              },
+              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
+            );
             return;
           case 'open-github-pr': {
             if (message.data?.prNumber !== undefined) {
-              this._handleGitHubActionMessage(webviewView.webview, 'open-github-pr', async () => {
-                await this._openGitHubPR(message.data.prNumber);
-                return { ok: true };
-              });
+              this._handleGitHubActionMessage(
+                webviewView.webview,
+                'open-github-pr',
+                async () => {
+                  await this._openGitHubPR(message.data.prNumber, message.data?.url, message.data?.repo);
+                  return { ok: true };
+                },
+                typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
+              );
             } else {
-              this._handleGitHubActionMessage(webviewView.webview, 'open-github-pr', async () => {
-                throw new Error('Missing PR number');
-              });
+              this._handleGitHubActionMessage(
+                webviewView.webview,
+                'open-github-pr',
+                async () => {
+                  throw new Error('Missing PR number');
+                },
+                typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
+              );
             }
             return;
           }
           case 'fetch-github-prs':
           case 'resync-github-prs':
             this._handleGitHubPRMessage(webviewView.webview, message as GitHubPRMessage);
+            return;
+          case 'execute-mcp-tool':
+            this._handleExecuteMcpTool(
+              webviewView.webview,
+              message.data?.toolName,
+              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
+            );
             return;
         }
       },
@@ -1180,8 +1217,20 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _openGitHubPR(prNumber: number) {
+  private async _openGitHubPR(prNumber: number, url?: string, repoOverride?: string) {
     try {
+      if (url) {
+        vscode.env.openExternal(vscode.Uri.parse(url));
+        return;
+      }
+
+      const repoInfoFromOverride = repoOverride ? this._parseGitHubRepo(repoOverride) : null;
+      if (repoInfoFromOverride) {
+        const prUrl = `https://github.com/${repoInfoFromOverride.owner}/${repoInfoFromOverride.repo}/pull/${prNumber}`;
+        vscode.env.openExternal(vscode.Uri.parse(prUrl));
+        return;
+      }
+
       const repo = await this._getGitRepository();
       if (!repo) {
         vscode.window.showWarningMessage('No Git repository found to open PR');
@@ -1213,6 +1262,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     const command = message.command;
     const data = message.data || {};
     const forceResync = command === 'resync-github-prs' || data.force === true;
+    const requestId = typeof data.requestId === 'string' ? data.requestId : undefined;
 
     try {
       const prs = await this._getGitHubPRs({
@@ -1225,11 +1275,13 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       webview.postMessage({
         command: `${command}-response`,
         result: { prs },
+        requestId,
       });
     } catch (error) {
       webview.postMessage({
         command: `${command}-response`,
         error: error instanceof Error ? error.message : 'Failed to process request',
+        requestId,
       });
     }
   }
@@ -1237,20 +1289,150 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private async _handleGitHubActionMessage(
     webview: vscode.Webview,
     command: string,
-    action: () => Promise<unknown>
+    action: () => Promise<unknown>,
+    requestId?: string
   ) {
     try {
       const result = await action();
       webview.postMessage({
         command: `${command}-response`,
         result: result ?? {},
+        requestId,
       });
     } catch (error) {
       webview.postMessage({
         command: `${command}-response`,
         error: error instanceof Error ? error.message : 'Failed to process request',
+        requestId,
       });
     }
+  }
+
+  private async _executeCommand(commandName: string, args?: unknown[]) {
+    if (!commandName) {
+      vscode.window.showWarningMessage('No command name provided');
+      return;
+    }
+
+    try {
+      await vscode.commands.executeCommand(commandName, ...(args ?? []));
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `Failed to execute command "${commandName}": ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private async _handleExecuteMcpTool(
+    webview: vscode.Webview,
+    toolName?: string,
+    requestId?: string
+  ) {
+    try {
+      if (!toolName) {
+        throw new Error('Missing MCP tool name');
+      }
+
+      const result = await this._executeMcpTool(toolName);
+      webview.postMessage({
+        command: 'mcpToolResult',
+        toolName,
+        result,
+      });
+      webview.postMessage({
+        command: 'execute-mcp-tool-response',
+        result,
+        requestId,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to execute MCP tool';
+      webview.postMessage({
+        command: 'mcpToolResult',
+        toolName,
+        error: message,
+      });
+      webview.postMessage({
+        command: 'execute-mcp-tool-response',
+        error: message,
+        requestId,
+      });
+    }
+  }
+
+  private async _executeMcpTool(toolName: string) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      throw new Error('No active editor found for MCP tool execution');
+    }
+
+    switch (toolName) {
+      case 'code-analysis':
+        return this._runCodeAnalysis(editor.document);
+      case 'doc-generator':
+        return this._runDocGenerator(editor.document);
+      default:
+        throw new Error(`Unknown MCP tool: ${toolName}`);
+    }
+  }
+
+  private async _runCodeAnalysis(document: vscode.TextDocument) {
+    const diagnostics = vscode.languages.getDiagnostics(document.uri);
+    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+      'vscode.executeDocumentSymbolProvider',
+      document.uri
+    );
+
+    const counts = diagnostics.reduce(
+      (acc, diag) => {
+        switch (diag.severity) {
+          case vscode.DiagnosticSeverity.Error:
+            acc.errors += 1;
+            break;
+          case vscode.DiagnosticSeverity.Warning:
+            acc.warnings += 1;
+            break;
+          case vscode.DiagnosticSeverity.Information:
+            acc.infos += 1;
+            break;
+          case vscode.DiagnosticSeverity.Hint:
+            acc.hints += 1;
+            break;
+        }
+        return acc;
+      },
+      { errors: 0, warnings: 0, infos: 0, hints: 0 }
+    );
+
+    const topSymbols = (symbols ?? []).map(symbol => ({
+      name: symbol.name,
+      kind: vscode.SymbolKind[symbol.kind],
+    }));
+
+    return {
+      document: {
+        fileName: document.fileName,
+        languageId: document.languageId,
+        lineCount: document.lineCount,
+        version: document.version,
+      },
+      diagnostics: counts,
+      symbols: topSymbols,
+    };
+  }
+
+  private async _runDocGenerator(document: vscode.TextDocument) {
+    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+      'vscode.executeDocumentSymbolProvider',
+      document.uri
+    );
+
+    const outline = (symbols ?? []).map(symbol => `- ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`);
+
+    return {
+      title: `Documentation outline for ${document.fileName.split(/[\\/]/).pop() ?? document.fileName}`,
+      outline,
+      summary: `Generated ${outline.length} symbol entries from the active document.`,
+    };
   }
 
   private async _getGitHubPRs(options: {
