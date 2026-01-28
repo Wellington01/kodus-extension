@@ -83,6 +83,7 @@ export interface AutoMergePRsCommand extends WebviewMessage {
 export interface OpenGitHubPRCommand extends WebviewMessage {
   command: 'openGitHubPR';
   prNumber: number;
+  url?: string;
 }
 
 export interface GitHubPRMessage extends WebviewMessage {

@@ -34,6 +34,7 @@ interface GitHubRepoInfo {
 interface GitHubPRCacheEntry {
   prs: GitHubPullRequest[];
   fetchedAt: number;
+  etag?: string;
 }
 
 type GitHubPRCache = Record<string, GitHubPRCacheEntry>;
@@ -105,7 +106,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             this._autoMergePRs(webviewView.webview);
             return;
           case 'openGitHubPR':
-            this._openGitHubPR(message.prNumber);
+            this._openGitHubPR(message.prNumber, message.url);
             return;
           case 'executeCommand':
             this._executeCommand(message.commandName, message.args);
@@ -671,19 +672,48 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
                         githubError.style.display = 'none';
                         
                         if (message.prs && message.prs.length > 0) {
-                            githubPRs.innerHTML = message.prs.map(pr => 
-                                '<div class="github-pr" onclick="openGitHubPR(' + pr.number + ')">' +
-                                    '<div class="pr-header">' +
-                                        '<h4 class="pr-title">' + pr.title + '</h4>' +
-                                        '<span class="pr-number">#' + pr.number + '</span>' +
-                                    '</div>' +
-                                    '<div class="pr-meta">' +
-                                        '<span class="pr-status ' + pr.state + '">' + pr.state + '</span>' +
-                                        '<span>by ' + pr.user.login + '</span>' +
-                                        '<span>' + formatDate(pr.updated_at) + '</span>' +
-                                    '</div>' +
-                                '</div>'
-                            ).join('');
+                            githubPRs.innerHTML = '';
+                            message.prs.forEach(pr => {
+                                const prItem = document.createElement('div');
+                                prItem.className = 'github-pr';
+                                prItem.addEventListener('click', () => openGitHubPR(pr.number, pr.html_url));
+
+                                const header = document.createElement('div');
+                                header.className = 'pr-header';
+
+                                const title = document.createElement('h4');
+                                title.className = 'pr-title';
+                                title.textContent = pr.title;
+
+                                const number = document.createElement('span');
+                                number.className = 'pr-number';
+                                number.textContent = '#' + pr.number;
+
+                                header.appendChild(title);
+                                header.appendChild(number);
+
+                                const meta = document.createElement('div');
+                                meta.className = 'pr-meta';
+
+                                const status = document.createElement('span');
+                                status.className = 'pr-status ' + pr.state;
+                                status.textContent = pr.state;
+
+                                const author = document.createElement('span');
+                                author.textContent = 'by ' + (pr.user?.login || 'unknown');
+
+                                const updated = document.createElement('span');
+                                updated.textContent = formatDate(pr.updated_at);
+
+                                meta.appendChild(status);
+                                meta.appendChild(author);
+                                meta.appendChild(updated);
+
+                                prItem.appendChild(header);
+                                prItem.appendChild(meta);
+
+                                githubPRs.appendChild(prItem);
+                            });
                         } else {
                             githubPRs.innerHTML = '<p style="text-align: center; color: var(--vscode-descriptionForeground);">No pull requests found.</p>';
                         }
@@ -696,10 +726,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             }
         });
         
-        function openGitHubPR(prNumber) {
+        function openGitHubPR(prNumber, url) {
             vscode.postMessage({
                 command: 'openGitHubPR',
-                prNumber: prNumber
+                prNumber: prNumber,
+                url: url
             });
         }
     </script>
@@ -1442,22 +1473,32 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }): Promise<GitHubPullRequest[]> {
     const repoInfo = await this._resolveGitHubRepoInfo(options);
     const cacheKey = this._getGitHubPRCacheKey(repoInfo);
+    let cachedEntry = this._getGitHubPRCacheEntry(cacheKey);
 
     if (!options.forceResync) {
-      const cached = this._getCachedGitHubPRs(cacheKey);
+      const cached = this._getCachedGitHubPRs(cacheKey, cachedEntry);
       if (cached) {
         return cached;
       }
     } else {
       await this._clearGitHubPRCacheEntry(cacheKey);
+      cachedEntry = undefined;
     }
 
-    const prs = await this._fetchGitHubPRsFromApi(repoInfo);
+    const fetchResult = await this._fetchGitHubPRsFromApi(repoInfo, cachedEntry?.etag);
+    if (fetchResult.notModified && cachedEntry) {
+      cachedEntry.fetchedAt = Date.now();
+      await this._setGitHubPRCacheEntry(cacheKey, cachedEntry);
+      return cachedEntry.prs;
+    }
+
     await this._setGitHubPRCacheEntry(cacheKey, {
-      prs,
+      prs: fetchResult.prs,
       fetchedAt: Date.now(),
+      etag: fetchResult.etag,
     });
-    return prs;
+
+    return fetchResult.prs;
   }
 
   private async _resolveGitHubRepoInfo(options: {
@@ -1560,15 +1601,26 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     return null;
   }
 
-  private async _fetchGitHubPRsFromApi(repoInfo: GitHubRepoInfo): Promise<GitHubPullRequest[]> {
+  private async _fetchGitHubPRsFromApi(
+    repoInfo: GitHubRepoInfo,
+    etag?: string
+  ): Promise<{ prs: GitHubPullRequest[]; etag?: string; notModified?: boolean }> {
     const url = this._buildGitHubPullsUrl(repoInfo);
 
     let token = await this._getGitHubAuthToken(false);
-    let response = await this._requestGitHub(url, token);
+    let response = await this._requestGitHub(url, token, {
+      headers: etag ? { 'If-None-Match': etag } : undefined,
+    });
 
     if ((response.status === 401 || response.status === 403) && !token) {
       token = await this._getGitHubAuthToken(true);
-      response = await this._requestGitHub(url, token);
+      response = await this._requestGitHub(url, token, {
+        headers: etag ? { 'If-None-Match': etag } : undefined,
+      });
+    }
+
+    if (response.status === 304) {
+      return { prs: [], etag, notModified: true };
     }
 
     if (!response.ok) {
@@ -1577,7 +1629,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     const data = (await response.json()) as GitHubApiPullRequest[];
-    return data.map(pr => this._normalizeGitHubPR(pr));
+    return {
+      prs: data.map(pr => this._normalizeGitHubPR(pr)),
+      etag: response.headers.get('etag') ?? undefined,
+    };
   }
 
   private async _getOpenPullRequestForBranch(
@@ -1674,7 +1729,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private async _requestGitHub(
     url: string,
     token?: string,
-    options?: { method?: string; body?: string }
+    options?: { method?: string; body?: string; headers?: Record<string, string> }
   ): Promise<Response> {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
@@ -1685,6 +1740,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
     if (options?.body) {
       headers['Content-Type'] = 'application/json';
+    }
+    if (options?.headers) {
+      Object.assign(headers, options.headers);
     }
 
     return fetch(url, {
@@ -1772,18 +1830,25 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     return this.context.workspaceState.get<GitHubPRCache>(this.githubPRCacheKey, {});
   }
 
-  private _getCachedGitHubPRs(cacheKey: string): GitHubPullRequest[] | null {
+  private _getGitHubPRCacheEntry(cacheKey: string): GitHubPRCacheEntry | undefined {
     const cache = this._getGitHubPRCache();
-    const entry = cache[cacheKey];
-    if (!entry) {
+    return cache[cacheKey];
+  }
+
+  private _getCachedGitHubPRs(
+    cacheKey: string,
+    entry?: GitHubPRCacheEntry
+  ): GitHubPullRequest[] | null {
+    const cachedEntry = entry ?? this._getGitHubPRCacheEntry(cacheKey);
+    if (!cachedEntry) {
       return null;
     }
 
-    if (Date.now() - entry.fetchedAt > this.githubPRCacheTtlMs) {
+    if (Date.now() - cachedEntry.fetchedAt > this.githubPRCacheTtlMs) {
       return null;
     }
 
-    return entry.prs;
+    return cachedEntry.prs;
   }
 
   private async _setGitHubPRCacheEntry(cacheKey: string, entry: GitHubPRCacheEntry) {
