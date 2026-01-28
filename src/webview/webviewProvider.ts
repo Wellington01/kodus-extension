@@ -7,10 +7,35 @@ import type {
   MainWebviewMessage,
   GitHubPRMessage,
   InitializeAICommand,
+  GitHubPullRequest,
 } from '@types';
 import { hasGetAPI } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
 import type { CaseConverterType } from '@utils/caseConverter';
+
+interface GitHubApiPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  user: { login: string } | null;
+  updated_at: string;
+  html_url: string;
+  merged_at?: string | null;
+}
+
+interface GitHubRepoInfo {
+  owner: string;
+  repo: string;
+  branch?: string;
+}
+
+interface GitHubPRCacheEntry {
+  prs: GitHubPullRequest[];
+  fetchedAt: number;
+}
+
+type GitHubPRCache = Record<string, GitHubPRCacheEntry>;
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
@@ -18,6 +43,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private aiManager: AIManager;
   private aiProvider?: AIStreamProvider;
+  private readonly githubPRCacheKey = 'kodus.github.prs.cache';
+  private readonly githubPRCacheTtlMs = 5 * 60 * 1000;
 
   constructor(private readonly context: ExtensionContext) {
     this.aiManager = new AIManager(context);
@@ -79,6 +106,31 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
           case 'openGitHubPR':
             this._openGitHubPR(message.prNumber);
             return;
+          case 'create-github-pr':
+            this._handleGitHubActionMessage(webviewView.webview, 'create-github-pr', async () => {
+              await this._createGitHubPR(webviewView.webview);
+              return { ok: true };
+            });
+            return;
+          case 'auto-merge-prs':
+            this._handleGitHubActionMessage(webviewView.webview, 'auto-merge-prs', async () => {
+              await this._autoMergePRs(webviewView.webview);
+              return { ok: true };
+            });
+            return;
+          case 'open-github-pr': {
+            if (message.data?.prNumber !== undefined) {
+              this._handleGitHubActionMessage(webviewView.webview, 'open-github-pr', async () => {
+                await this._openGitHubPR(message.data.prNumber);
+                return { ok: true };
+              });
+            } else {
+              this._handleGitHubActionMessage(webviewView.webview, 'open-github-pr', async () => {
+                throw new Error('Missing PR number');
+              });
+            }
+            return;
+          }
           case 'fetch-github-prs':
           case 'resync-github-prs':
             this._handleGitHubPRMessage(webviewView.webview, message as GitHubPRMessage);
@@ -1014,14 +1066,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _fetchGitHubPRs(webview: vscode.Webview, forceResync: boolean = false) {
     try {
-      // TODO: Implement GitHub API call and define a proper type for PRs.
-      // The `forceResync` flag should be used to either fetch fresh data or use a local cache.
-      const prs: unknown[] = []; // Placeholder: This needs to be replaced with actual data fetching.
-
-      // For now, return empty array - this should be replaced with actual GitHub API integration
+      const prs = await this._getGitHubPRs({ forceResync });
       webview.postMessage({
         command: 'githubPRsResult',
-        prs: prs,
+        prs,
       });
     } catch (error) {
       webview.postMessage({
@@ -1055,28 +1103,26 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _openGitHubPR(prNumber: number) {
     try {
-      // This should open the PR in the browser
-      const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
-      if (!gitExtension) {
-        vscode.window.showWarningMessage('Git extension not found');
+      const repo = await this._getGitRepository();
+      if (!repo) {
+        vscode.window.showWarningMessage('No Git repository found to open PR');
         return;
       }
 
-      const git: GitExtension = gitExtension.isActive
-        ? gitExtension.exports
-        : await gitExtension.activate();
-
-      const api: API = hasGetAPI(git) ? git.getAPI(1) : git;
-      const repo: Repository | undefined = api?.repositories?.[0];
-
-      if (repo) {
-        const remoteUrl = repo.state.remotes[0]?.fetchUrl || repo.state.remotes[0]?.pushUrl;
-        if (remoteUrl) {
-          const url = remoteUrl.replace(/\.git$/, '').replace(/^git@github\.com:/, 'https://github.com/');
-          const prUrl = `${url}/pull/${prNumber}`;
-          vscode.env.openExternal(vscode.Uri.parse(prUrl));
-        }
+      const remoteUrl = this._getRepositoryRemoteUrl(repo);
+      if (!remoteUrl) {
+        vscode.window.showWarningMessage('No Git remote URL found to open PR');
+        return;
       }
+
+      const repoInfo = this._parseGitHubRepo(remoteUrl);
+      if (!repoInfo) {
+        vscode.window.showWarningMessage('Remote is not a GitHub repository');
+        return;
+      }
+
+      const prUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}/pull/${prNumber}`;
+      vscode.env.openExternal(vscode.Uri.parse(prUrl));
     } catch (error) {
       vscode.window.showErrorMessage(
         `Failed to open PR: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1090,9 +1136,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     const forceResync = command === 'resync-github-prs' || data.force === true;
 
     try {
-      // TODO: Implement GitHub API call and define a proper type for PRs.
-      // The `forceResync` flag should be used to either fetch fresh data or use a local cache.
-      const prs: unknown[] = []; // Placeholder: This needs to be replaced with actual data fetching.
+      const prs = await this._getGitHubPRs({
+        forceResync,
+        repo: typeof data.repo === 'string' ? data.repo : undefined,
+        branch: typeof data.branch === 'string' ? data.branch : undefined,
+      });
 
       // Send response back to component
       webview.postMessage({
@@ -1104,6 +1152,275 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
         command: `${command}-response`,
         error: error instanceof Error ? error.message : 'Failed to process request',
       });
+    }
+  }
+
+  private async _handleGitHubActionMessage(
+    webview: vscode.Webview,
+    command: string,
+    action: () => Promise<unknown>
+  ) {
+    try {
+      const result = await action();
+      webview.postMessage({
+        command: `${command}-response`,
+        result: result ?? {},
+      });
+    } catch (error) {
+      webview.postMessage({
+        command: `${command}-response`,
+        error: error instanceof Error ? error.message : 'Failed to process request',
+      });
+    }
+  }
+
+  private async _getGitHubPRs(options: {
+    forceResync?: boolean;
+    repo?: string;
+    branch?: string;
+  }): Promise<GitHubPullRequest[]> {
+    const repoInfo = await this._resolveGitHubRepoInfo(options);
+    const cacheKey = this._getGitHubPRCacheKey(repoInfo);
+
+    if (!options.forceResync) {
+      const cached = this._getCachedGitHubPRs(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } else {
+      await this._clearGitHubPRCacheEntry(cacheKey);
+    }
+
+    const prs = await this._fetchGitHubPRsFromApi(repoInfo);
+    await this._setGitHubPRCacheEntry(cacheKey, {
+      prs,
+      fetchedAt: Date.now(),
+    });
+    return prs;
+  }
+
+  private async _resolveGitHubRepoInfo(options: {
+    repo?: string;
+    branch?: string;
+  }): Promise<GitHubRepoInfo> {
+    if (options.repo) {
+      const parsed = this._parseGitHubRepo(options.repo);
+      if (parsed) {
+        return {
+          ...parsed,
+          branch: options.branch,
+        };
+      }
+    }
+
+    const repository = await this._getGitRepository();
+    if (!repository) {
+      throw new Error('No Git repository found in the workspace');
+    }
+
+    const remoteUrl = this._getRepositoryRemoteUrl(repository);
+    if (!remoteUrl) {
+      throw new Error('No Git remote URL found for the repository');
+    }
+
+    const parsed = this._parseGitHubRepo(remoteUrl);
+    if (!parsed) {
+      throw new Error('Remote is not a GitHub repository');
+    }
+
+    return {
+      ...parsed,
+      branch: options.branch,
+    };
+  }
+
+  private async _getGitRepository(): Promise<Repository | undefined> {
+    const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
+    if (!gitExtension) {
+      return undefined;
+    }
+
+    const git: GitExtension = gitExtension.isActive
+      ? gitExtension.exports
+      : await gitExtension.activate();
+
+    const api: API = hasGetAPI(git) ? git.getAPI(1) : git;
+    if (!api) {
+      return undefined;
+    }
+
+    const activeUri = vscode.window.activeTextEditor?.document.uri;
+    if (activeUri) {
+      const activeRepo =
+        api.getRepository(activeUri) ??
+        api.getRepositoryFromUri?.(activeUri) ??
+        api.getRepositoryFromPath?.(activeUri.fsPath);
+
+      if (activeRepo) {
+        return activeRepo;
+      }
+    }
+
+    return api.repositories?.[0];
+  }
+
+  private _getRepositoryRemoteUrl(repository: Repository): string | undefined {
+    const remotes = repository.state.remotes;
+    if (!remotes.length) {
+      return undefined;
+    }
+
+    const preferredRemote = remotes.find(remote => remote.name === 'origin') ?? remotes[0];
+    return preferredRemote.fetchUrl || preferredRemote.pushUrl;
+  }
+
+  private _parseGitHubRepo(input: string): { owner: string; repo: string } | null {
+    const normalized = input.trim().replace(/\.git$/i, '').replace(/\/$/, '');
+    const patterns = [
+      /^git@github\.com:([^/]+)\/([^/]+)$/i,
+      /^ssh:\/\/git@github\.com\/([^/]+)\/([^/]+)$/i,
+      /^git:\/\/github\.com\/([^/]+)\/([^/]+)$/i,
+      /^https?:\/\/(?:www\.)?github\.com\/([^/]+)\/([^/]+)$/i,
+      /^github\.com\/([^/]+)\/([^/]+)$/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = pattern.exec(normalized);
+      if (match) {
+        return { owner: match[1], repo: match[2] };
+      }
+    }
+
+    const directMatch = /^([^/]+)\/([^/]+)$/.exec(normalized);
+    if (directMatch) {
+      return { owner: directMatch[1], repo: directMatch[2] };
+    }
+
+    return null;
+  }
+
+  private async _fetchGitHubPRsFromApi(repoInfo: GitHubRepoInfo): Promise<GitHubPullRequest[]> {
+    const url = this._buildGitHubPullsUrl(repoInfo);
+
+    let token = await this._getGitHubAuthToken(false);
+    let response = await this._requestGitHub(url, token);
+
+    if ((response.status === 401 || response.status === 403) && !token) {
+      token = await this._getGitHubAuthToken(true);
+      response = await this._requestGitHub(url, token);
+    }
+
+    if (!response.ok) {
+      const errorMessage = await this._getGitHubErrorMessage(response);
+      throw new Error(errorMessage);
+    }
+
+    const data = (await response.json()) as GitHubApiPullRequest[];
+    return data.map(pr => this._normalizeGitHubPR(pr));
+  }
+
+  private _buildGitHubPullsUrl(repoInfo: GitHubRepoInfo): string {
+    const url = new URL(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`);
+    url.searchParams.set('state', 'all');
+    url.searchParams.set('sort', 'updated');
+    url.searchParams.set('direction', 'desc');
+    url.searchParams.set('per_page', '30');
+    if (repoInfo.branch) {
+      url.searchParams.set('base', repoInfo.branch);
+    }
+    return url.toString();
+  }
+
+  private async _requestGitHub(url: string, token?: string): Promise<Response> {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'kodus-extension',
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return fetch(url, { headers });
+  }
+
+  private async _getGitHubAuthToken(createIfNone: boolean): Promise<string | undefined> {
+    try {
+      const session = await vscode.authentication.getSession('github', ['repo'], {
+        createIfNone,
+      });
+      return session?.accessToken;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async _getGitHubErrorMessage(response: Response): Promise<string> {
+    if (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0') {
+      return 'GitHub API rate limit exceeded. Sign in to GitHub to increase the limit.';
+    }
+
+    try {
+      const payload = (await response.json()) as { message?: string };
+      if (payload?.message) {
+        return `GitHub API error: ${payload.message}`;
+      }
+    } catch {
+      // ignore JSON parse errors
+    }
+
+    return `GitHub API request failed with status ${response.status}`;
+  }
+
+  private _normalizeGitHubPR(pr: GitHubApiPullRequest): GitHubPullRequest {
+    const state =
+      pr.state === 'open' ? 'open' : pr.merged_at ? 'merged' : 'closed';
+
+    return {
+      id: pr.id,
+      number: pr.number,
+      title: pr.title,
+      state,
+      user: {
+        login: pr.user?.login ?? 'unknown',
+      },
+      updated_at: pr.updated_at,
+      html_url: pr.html_url,
+    };
+  }
+
+  private _getGitHubPRCacheKey(repoInfo: GitHubRepoInfo): string {
+    return `${repoInfo.owner}/${repoInfo.repo}#${repoInfo.branch ?? ''}`;
+  }
+
+  private _getGitHubPRCache(): GitHubPRCache {
+    return this.context.workspaceState.get<GitHubPRCache>(this.githubPRCacheKey, {});
+  }
+
+  private _getCachedGitHubPRs(cacheKey: string): GitHubPullRequest[] | null {
+    const cache = this._getGitHubPRCache();
+    const entry = cache[cacheKey];
+    if (!entry) {
+      return null;
+    }
+
+    if (Date.now() - entry.fetchedAt > this.githubPRCacheTtlMs) {
+      return null;
+    }
+
+    return entry.prs;
+  }
+
+  private async _setGitHubPRCacheEntry(cacheKey: string, entry: GitHubPRCacheEntry) {
+    const cache = this._getGitHubPRCache();
+    cache[cacheKey] = entry;
+    await this.context.workspaceState.update(this.githubPRCacheKey, cache);
+  }
+
+  private async _clearGitHubPRCacheEntry(cacheKey: string) {
+    const cache = this._getGitHubPRCache();
+    if (cache[cacheKey]) {
+      delete cache[cacheKey];
+      await this.context.workspaceState.update(this.githubPRCacheKey, cache);
     }
   }
 }

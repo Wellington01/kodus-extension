@@ -88,7 +88,33 @@ export interface OpenGitHubPRCommand extends WebviewMessage {
 export interface GitHubPRMessage extends WebviewMessage {
   command: 'fetch-github-prs' | 'resync-github-prs';
   data?: {
+    repo?: string;
+    branch?: string;
     force?: boolean;
+  };
+}
+
+export interface CreateGitHubPRMessage extends WebviewMessage {
+  command: 'create-github-pr';
+  data?: {
+    repo?: string;
+    branch?: string;
+  };
+}
+
+export interface AutoMergeGitHubPRsMessage extends WebviewMessage {
+  command: 'auto-merge-prs';
+  data?: {
+    repo?: string;
+    branch?: string;
+  };
+}
+
+export interface OpenGitHubPRMessage extends WebviewMessage {
+  command: 'open-github-pr';
+  data: {
+    prNumber: number;
+    repo?: string;
   };
 }
 
@@ -108,4 +134,7 @@ export type MainWebviewMessage =
   | CreateGitHubPRCommand
   | AutoMergePRsCommand
   | OpenGitHubPRCommand
-  | GitHubPRMessage;
+  | GitHubPRMessage
+  | CreateGitHubPRMessage
+  | AutoMergeGitHubPRsMessage
+  | OpenGitHubPRMessage;
