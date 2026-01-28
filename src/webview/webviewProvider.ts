@@ -1434,9 +1434,23 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       { errors: 0, warnings: 0, infos: 0, hints: 0 }
     );
 
+    const symbolKindCounts = (symbols ?? []).reduce<Record<string, number>>((acc, symbol) => {
+      const kind = vscode.SymbolKind[symbol.kind] ?? 'Unknown';
+      acc[kind] = (acc[kind] ?? 0) + 1;
+      return acc;
+    }, {});
+
     const topSymbols = (symbols ?? []).map(symbol => ({
       name: symbol.name,
       kind: vscode.SymbolKind[symbol.kind],
+    }));
+
+    const topDiagnostics = diagnostics.slice(0, 10).map(diag => ({
+      message: diag.message,
+      severity: this._formatDiagnosticSeverity(diag.severity),
+      line: diag.range.start.line + 1,
+      character: diag.range.start.character + 1,
+      source: diag.source,
     }));
 
     return {
@@ -1447,7 +1461,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
         version: document.version,
       },
       diagnostics: counts,
+      diagnosticSamples: topDiagnostics,
       symbols: topSymbols,
+      symbolSummary: symbolKindCounts,
     };
   }
 
@@ -1458,12 +1474,34 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     );
 
     const outline = (symbols ?? []).map(symbol => `- ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`);
+    const markdown = [
+      `# ${document.fileName.split(/[\\/]/).pop() ?? document.fileName}`,
+      '',
+      '## Outline',
+      ...(outline.length ? outline : ['- (no symbols found)']),
+    ].join('\n');
 
     return {
       title: `Documentation outline for ${document.fileName.split(/[\\/]/).pop() ?? document.fileName}`,
       outline,
+      markdown,
       summary: `Generated ${outline.length} symbol entries from the active document.`,
     };
+  }
+
+  private _formatDiagnosticSeverity(severity: vscode.DiagnosticSeverity): string {
+    switch (severity) {
+      case vscode.DiagnosticSeverity.Error:
+        return 'error';
+      case vscode.DiagnosticSeverity.Warning:
+        return 'warning';
+      case vscode.DiagnosticSeverity.Information:
+        return 'info';
+      case vscode.DiagnosticSeverity.Hint:
+        return 'hint';
+      default:
+        return 'unknown';
+    }
   }
 
   private async _getGitHubPRs(options: {
