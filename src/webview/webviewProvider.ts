@@ -4,6 +4,7 @@ import type {
   GitExtension,
   API,
   Repository,
+  RefType,
   MainWebviewMessage,
   GitHubPRMessage,
   InitializeAICommand,
@@ -1079,10 +1080,44 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _createGitHubPR(webview: vscode.Webview) {
+  private async _createGitHubPR(_webview: vscode.Webview) {
     try {
-      // This should create a PR via GitHub API
-      vscode.window.showInformationMessage('Create PR functionality not yet implemented');
+      const repository = await this._getGitRepository();
+      if (!repository) {
+        vscode.window.showWarningMessage('No Git repository found to create a PR');
+        return;
+      }
+
+      const remoteUrl = this._getRepositoryRemoteUrl(repository);
+      if (!remoteUrl) {
+        vscode.window.showWarningMessage('No Git remote URL found to create a PR');
+        return;
+      }
+
+      const repoInfo = this._parseGitHubRepo(remoteUrl);
+      if (!repoInfo) {
+        vscode.window.showWarningMessage('Remote is not a GitHub repository');
+        return;
+      }
+
+      const headBranch = repository.state.HEAD?.name;
+      if (!headBranch) {
+        vscode.window.showWarningMessage('Unable to determine the current branch');
+        return;
+      }
+
+      const baseBranch = this._guessBaseBranch(repository);
+      if (baseBranch === headBranch) {
+        vscode.window.showInformationMessage(
+          'You are on the base branch. Switch to a feature branch to create a PR.'
+        );
+        return;
+      }
+
+      const baseEncoded = encodeURIComponent(baseBranch);
+      const headEncoded = encodeURIComponent(headBranch);
+      const compareUrl = `https://github.com/${repoInfo.owner}/${repoInfo.repo}/compare/${baseEncoded}...${headEncoded}?expand=1`;
+      vscode.env.openExternal(vscode.Uri.parse(compareUrl));
     } catch (error) {
       vscode.window.showErrorMessage(
         `Failed to create PR: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1090,10 +1125,54 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _autoMergePRs(webview: vscode.Webview) {
+  private async _autoMergePRs(_webview: vscode.Webview) {
     try {
-      // This should auto-merge PRs via GitHub API
-      vscode.window.showInformationMessage('Auto merge functionality not yet implemented');
+      const repository = await this._getGitRepository();
+      if (!repository) {
+        vscode.window.showWarningMessage('No Git repository found to auto-merge PRs');
+        return;
+      }
+
+      const remoteUrl = this._getRepositoryRemoteUrl(repository);
+      if (!remoteUrl) {
+        vscode.window.showWarningMessage('No Git remote URL found to auto-merge PRs');
+        return;
+      }
+
+      const repoInfo = this._parseGitHubRepo(remoteUrl);
+      if (!repoInfo) {
+        vscode.window.showWarningMessage('Remote is not a GitHub repository');
+        return;
+      }
+
+      const headBranch = repository.state.HEAD?.name;
+      if (!headBranch) {
+        vscode.window.showWarningMessage('Unable to determine the current branch');
+        return;
+      }
+
+      const pr = await this._getOpenPullRequestForBranch(repoInfo, headBranch);
+      if (!pr) {
+        vscode.window.showInformationMessage(`No open PR found for branch "${headBranch}".`);
+        return;
+      }
+
+      const proceed = await vscode.window.showWarningMessage(
+        `Merge PR #${pr.number}: ${pr.title}`,
+        { modal: true },
+        'Merge'
+      );
+      if (proceed !== 'Merge') {
+        return;
+      }
+
+      const mergeMethod = await this._pickMergeMethod();
+      if (!mergeMethod) {
+        return;
+      }
+
+      await this._mergePullRequest(repoInfo, pr.number, mergeMethod);
+      vscode.window.showInformationMessage(`PR #${pr.number} merged with ${mergeMethod}.`);
     } catch (error) {
       vscode.window.showErrorMessage(
         `Failed to auto merge PRs: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1319,6 +1398,85 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     return data.map(pr => this._normalizeGitHubPR(pr));
   }
 
+  private async _getOpenPullRequestForBranch(
+    repoInfo: GitHubRepoInfo,
+    headBranch: string
+  ): Promise<GitHubPullRequest | null> {
+    const url = new URL(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`);
+    url.searchParams.set('state', 'open');
+    url.searchParams.set('head', `${repoInfo.owner}:${headBranch}`);
+    url.searchParams.set('per_page', '1');
+
+    let token = await this._getGitHubAuthToken(false);
+    let response = await this._requestGitHub(url.toString(), token);
+
+    if ((response.status === 401 || response.status === 403) && !token) {
+      token = await this._getGitHubAuthToken(true);
+      response = await this._requestGitHub(url.toString(), token);
+    }
+
+    if (!response.ok) {
+      const errorMessage = await this._getGitHubErrorMessage(response);
+      throw new Error(errorMessage);
+    }
+
+    const data = (await response.json()) as GitHubApiPullRequest[];
+    if (!data.length) {
+      return null;
+    }
+
+    return this._normalizeGitHubPR(data[0]);
+  }
+
+  private async _mergePullRequest(
+    repoInfo: GitHubRepoInfo,
+    prNumber: number,
+    mergeMethod: 'merge' | 'squash' | 'rebase'
+  ) {
+    const token = await this._getGitHubAuthToken(true);
+    if (!token) {
+      throw new Error('GitHub authentication is required to merge pull requests.');
+    }
+
+    const url = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls/${prNumber}/merge`;
+    const response = await this._requestGitHub(url, token, {
+      method: 'PUT',
+      body: JSON.stringify({ merge_method: mergeMethod }),
+    });
+
+    if (!response.ok) {
+      const errorMessage = await this._getGitHubErrorMessage(response);
+      throw new Error(errorMessage);
+    }
+  }
+
+  private async _pickMergeMethod(): Promise<'merge' | 'squash' | 'rebase' | undefined> {
+    const selection = await vscode.window.showQuickPick(
+      [
+        {
+          label: 'Merge',
+          description: 'Create a merge commit',
+          value: 'merge' as const,
+        },
+        {
+          label: 'Squash',
+          description: 'Squash and merge',
+          value: 'squash' as const,
+        },
+        {
+          label: 'Rebase',
+          description: 'Rebase and merge',
+          value: 'rebase' as const,
+        },
+      ],
+      {
+        placeHolder: 'Select merge method',
+      }
+    );
+
+    return selection?.value;
+  }
+
   private _buildGitHubPullsUrl(repoInfo: GitHubRepoInfo): string {
     const url = new URL(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`);
     url.searchParams.set('state', 'all');
@@ -1331,7 +1489,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     return url.toString();
   }
 
-  private async _requestGitHub(url: string, token?: string): Promise<Response> {
+  private async _requestGitHub(
+    url: string,
+    token?: string,
+    options?: { method?: string; body?: string }
+  ): Promise<Response> {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'User-Agent': 'kodus-extension',
@@ -1339,8 +1501,15 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    if (options?.body) {
+      headers['Content-Type'] = 'application/json';
+    }
 
-    return fetch(url, { headers });
+    return fetch(url, {
+      headers,
+      method: options?.method ?? 'GET',
+      body: options?.body,
+    });
   }
 
   private async _getGitHubAuthToken(createIfNone: boolean): Promise<string | undefined> {
@@ -1386,6 +1555,31 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       updated_at: pr.updated_at,
       html_url: pr.html_url,
     };
+  }
+
+  private _guessBaseBranch(repository: Repository): string {
+    const refs = repository.state.refs
+      .filter(ref => ref.type === RefType.RemoteHead && ref.name)
+      .map(ref => ref.name as string);
+
+    const preferred = ['origin/main', 'origin/master', 'upstream/main', 'upstream/master'];
+    for (const candidate of preferred) {
+      if (refs.includes(candidate)) {
+        return candidate.split('/').slice(1).join('/') || candidate;
+      }
+    }
+
+    const originRef = refs.find(ref => ref.startsWith('origin/'));
+    if (originRef) {
+      return originRef.split('/').slice(1).join('/') || originRef;
+    }
+
+    const fallback = refs[0];
+    if (fallback) {
+      return fallback.split('/').slice(1).join('/') || fallback;
+    }
+
+    return 'main';
   }
 
   private _getGitHubPRCacheKey(repoInfo: GitHubRepoInfo): string {
