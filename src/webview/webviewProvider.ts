@@ -39,6 +39,23 @@ interface GitHubPRCacheEntry {
 
 type GitHubPRCache = Record<string, GitHubPRCacheEntry>;
 
+const COMMANDS = {
+  FORMAT_JSON: 'formatJson',
+  CONVERT_CASE: 'convertCase',
+  INSERT_TIMESTAMP: 'insertTimestamp',
+  INSERT_SNIPPET: 'insertSnippet',
+  INITIALIZE_AI: 'initializeAI',
+  SEND_AI_MESSAGE: 'sendAIMessage',
+  DISCONNECT_AI: 'disconnectAI',
+  FETCH_GITHUB_PRS: 'fetchGitHubPRs',
+  RESYNC_GITHUB_PRS: 'resyncGitHubPRs',
+  CREATE_GITHUB_PR: 'createGitHubPR',
+  AUTO_MERGE_PRS: 'autoMergePRs',
+  OPEN_GITHUB_PR: 'openGitHubPR',
+  EXECUTE_COMMAND: 'executeCommand',
+  EXECUTE_MCP_TOOL: 'executeMcpTool',
+};
+
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
 
@@ -70,125 +87,62 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     // Handle messages from the webview
     webviewView.webview.onDidReceiveMessage(
-      (message: MainWebviewMessage) => {
-        switch (message.command) {
-          case 'formatJson':
-            this._formatJson();
-            return;
-          case 'convertCase':
-            this._convertCase();
-            return;
-          case 'insertTimestamp':
-            this._insertTimestamp();
-            return;
-          case 'insertSnippet':
-            this._insertSnippet();
-            return;
-          case 'initializeAI':
-            this._initializeAI(message);
-            return;
-          case 'sendAIMessage':
-            this._sendAIMessage(message.content, message.context);
-            return;
-          case 'disconnectAI':
-            this._disconnectAI();
-            return;
-          case 'fetchGitHubPRs':
-            this._fetchGitHubPRs(webviewView.webview, false);
-            return;
-          case 'resyncGitHubPRs':
-            this._fetchGitHubPRs(webviewView.webview, true);
-            return;
-          case 'createGitHubPR':
-            this._createGitHubPR(webviewView.webview);
-            return;
-          case 'autoMergePRs':
-            this._autoMergePRs(webviewView.webview);
-            return;
-          case 'openGitHubPR':
-            this._openGitHubPR(message.prNumber, message.url);
-            return;
-          case 'executeCommand':
-            this._executeCommand(message.commandName, message.args);
-            return;
-          case 'executeMcpTool':
-            this._handleExecuteMcpTool(
-              webviewView.webview,
-              message.toolName,
-              undefined
-            );
-            return;
-          case 'create-github-pr':
-            this._handleGitHubActionMessage(
-              webviewView.webview,
-              'create-github-pr',
-              async () => {
-                await this._createGitHubPR(webviewView.webview);
-                return { ok: true };
-              },
-              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
-            );
-            return;
-          case 'auto-merge-prs':
-            this._handleGitHubActionMessage(
-              webviewView.webview,
-              'auto-merge-prs',
-              async () => {
-                await this._autoMergePRs(webviewView.webview);
-                return { ok: true };
-              },
-              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
-            );
-            return;
-          case 'open-github-pr': {
-            if (message.data?.prNumber !== undefined) {
-              this._handleGitHubActionMessage(
-                webviewView.webview,
-                'open-github-pr',
-                async () => {
-                  await this._openGitHubPR(message.data.prNumber, message.data?.url, message.data?.repo);
-                  return { ok: true };
-                },
-                typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
-              );
-            } else {
-              this._handleGitHubActionMessage(
-                webviewView.webview,
-                'open-github-pr',
-                async () => {
-                  throw new Error('Missing PR number');
-                },
-                typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
-              );
-            }
-            return;
-          }
-          case 'fetch-github-prs':
-          case 'resync-github-prs':
-            this._handleGitHubPRMessage(webviewView.webview, message as GitHubPRMessage);
-            return;
-          case 'execute-mcp-tool':
-            this._handleExecuteMcpTool(
-              webviewView.webview,
-              message.data?.toolName,
-              typeof message.data?.requestId === 'string' ? message.data.requestId : undefined
-            );
-            return;
-        }
-      },
+      this._handleWebviewMessage.bind(this, webviewView.webview),
       undefined,
       this.context.subscriptions
     );
   }
 
+  private _handleWebviewMessage(
+    webview: vscode.Webview,
+    message: MainWebviewMessage
+  ) {
+    const commandHandlers: Record<string, Function> = {
+      [COMMANDS.FORMAT_JSON]: this._formatJson,
+      [COMMANDS.CONVERT_CASE]: this._convertCase,
+      [COMMANDS.INSERT_TIMESTAMP]: this._insertTimestamp,
+      [COMMANDS.INSERT_SNIPPET]: this._insertSnippet,
+      [COMMANDS.INITIALIZE_AI]: this._initializeAI,
+      [COMMANDS.SEND_AI_MESSAGE]: this._sendAIMessage,
+      [COMMANDS.DISCONNECT_AI]: this._disconnectAI,
+      [COMMANDS.FETCH_GITHUB_PRS]: () => this._fetchGitHubPRs(webview, false),
+      [COMMANDS.RESYNC_GITHUB_PRS]: () => this._fetchGitHubPRs(webview, true),
+      [COMMANDS.CREATE_GITHUB_PR]: () => this._createGitHubPR(webview),
+      [COMMANDS.AUTO_MERGE_PRS]: () => this._autoMergePRs(webview),
+      [COMMANDS.OPEN_GITHUB_PR]: () =>
+        this._openGitHubPR(message.prNumber, message.url),
+      [COMMANDS.EXECUTE_COMMAND]: () =>
+        this._executeCommand(message.commandName, message.args),
+      [COMMANDS.EXECUTE_MCP_TOOL]: () =>
+        this._handleExecuteMcpTool(webview, message.toolName, undefined),
+    };
+
+    const handler = commandHandlers[message.command];
+    if (handler) {
+      handler.call(this);
+    }
+  }
+
+  // Improved HTML generation
   private _getHtmlForWebview(webview: vscode.Webview) {
+    const style = this._getWebviewStyles();
+    const header = this._getWebviewHeader();
+    const body = this._getWebviewBody();
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kodus Tools</title>
-    <style>
+    <style>${style}</style>
+</head>
+<body>${header}${body}</body>
+</html>`;
+  }
+
+  private _getWebviewStyles() {
+    return `
         body { 
             font-family: var(--vscode-font-family);
             font-size: var(--vscode-font-size);
@@ -444,445 +398,105 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
             background: var(--vscode-gitDecoration-modifiedResourceForeground);
             color: var(--vscode-editor-background);
         }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🚀 Kodus Tools</h1>
-        <p>Open source development tools and utilities</p>
-    </div>
-    
-    <!-- Quick Actions Section -->
-    <div class="section">
-        <h2 class="section-title">Quick Actions</h2>
-        <div class="tools-grid">
-            <div class="tool-card" onclick="executeCommand('kodus-extension.formatJson')">
-                <div class="tool-icon">📄</div>
-                <div class="tool-title">Format JSON</div>
-                <div class="tool-description">Format and validate JSON files</div>
-            </div>
-            
-            <div class="tool-card" onclick="executeCommand('kodus-extension.convertCase')">
-                <div class="tool-icon">🔄</div>
-                <div class="tool-title">Convert Case</div>
-                <div class="tool-description">Convert text between different cases</div>
-            </div>
-            
-            <div class="tool-card" onclick="executeCommand('kodus-extension.insertTimestamp')">
-                <div class="tool-icon">⏰</div>
-                <div class="tool-title">Insert Timestamp</div>
-                <div class="tool-description">Insert current timestamp</div>
-            </div>
-            
-            <div class="tool-card" onclick="executeCommand('kodus-extension.insertSnippet')">
-                <div class="tool-icon">📝</div>
-                <div class="tool-title">Insert Snippet</div>
-                <div class="tool-description">Insert code snippets</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- MCP Tools Section -->
-    <div class="section">
-        <h2 class="section-title">MCP Tools</h2>
-        <div class="mcp-tools">
-            <div class="mcp-tool">
-                <div class="mcp-tool-header">
-                    <div class="mcp-tool-name">Code Analysis</div>
-                </div>
-                <div class="mcp-tool-description">Analyze code quality and suggest improvements</div>
-                <button class="btn" onclick="executeMcpTool('code-analysis')">Execute</button>
-                <button class="btn secondary" onclick="clearMcpResult('code-analysis')">Clear</button>
-                <div id="code-analysis-result" class="result" style="display: none;"></div>
-                <div id="code-analysis-error" class="error" style="display: none;"></div>
-            </div>
-            
-            <div class="mcp-tool">
-                <div class="mcp-tool-header">
-                    <div class="mcp-tool-name">Documentation Generator</div>
-                </div>
-                <div class="mcp-tool-description">Generate documentation from code comments</div>
-                <button class="btn" onclick="executeMcpTool('doc-generator')">Execute</button>
-                <button class="btn secondary" onclick="clearMcpResult('doc-generator')">Clear</button>
-                <div id="doc-generator-result" class="result" style="display: none;"></div>
-                <div id="doc-generator-error" class="error" style="display: none;"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- GitHub Sync Section -->
-    <div class="section">
-        <h2 class="section-title">GitHub Integration</h2>
-        <div class="github-sync">
-            <div class="mcp-tool-header">
-                <div class="mcp-tool-name">GitHub PR Sync</div>
-                <span id="last-sync" class="loading" style="display: none;">Last sync: <span id="sync-time"></span></span>
-            </div>
-            <div class="mcp-tool-description">Sync and manage pull requests with GitHub</div>
-            <button class="btn" onclick="fetchGitHubPRs()">Sync PRs</button>
-            <button class="btn" onclick="resyncGitHubPRs()" style="background: var(--vscode-gitDecoration-modifiedResourceForeground);">Resync</button>
-            <button class="btn secondary" onclick="createGitHubPR()">Create PR</button>
-            <button class="btn" onclick="autoMergePRs()">Auto Merge</button>
-            
-            <div id="github-loading" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                Syncing with GitHub...
-            </div>
-            
-            <div id="github-error" class="error" style="display: none;"></div>
-            <div id="github-prs"></div>
-        </div>
-    </div>
-    
-    <div class="status">
-        <p>Ready to help! ✨</p>
-    </div>
-
-    <script>
-        const vscode = acquireVsCodeApi();
-        
-        function executeCommand(command) {
-            vscode.postMessage({
-                command: 'executeCommand',
-                commandName: command
-            });
-        }
-        
-        function executeMcpTool(toolName) {
-            const resultDiv = document.getElementById(toolName + '-result');
-            const errorDiv = document.getElementById(toolName + '-error');
-            
-            // Show loading state
-            resultDiv.style.display = 'none';
-            errorDiv.style.display = 'none';
-            
-            vscode.postMessage({
-                command: 'executeMcpTool',
-                toolName: toolName
-            });
-        }
-        
-        function clearMcpResult(toolName) {
-            const resultDiv = document.getElementById(toolName + '-result');
-            const errorDiv = document.getElementById(toolName + '-error');
-            
-            resultDiv.style.display = 'none';
-            errorDiv.style.display = 'none';
-            resultDiv.textContent = '';
-            errorDiv.textContent = '';
-        }
-        
-        function fetchGitHubPRs() {
-            const loadingDiv = document.getElementById('github-loading');
-            const errorDiv = document.getElementById('github-error');
-            const prsDiv = document.getElementById('github-prs');
-            
-            // Reset loading div to original state
-            loadingDiv.innerHTML = '<div class="spinner"></div> Syncing with GitHub...';
-            loadingDiv.style.display = 'flex';
-            errorDiv.style.display = 'none';
-            prsDiv.innerHTML = '';
-            
-            vscode.postMessage({
-                command: 'fetchGitHubPRs'
-            });
-        }
-        
-        function resyncGitHubPRs() {
-            const loadingDiv = document.getElementById('github-loading');
-            const errorDiv = document.getElementById('github-error');
-            const prsDiv = document.getElementById('github-prs');
-            
-            // Set loading div content for resync operation
-            loadingDiv.innerHTML = '<div class="spinner"></div> Resyncing with GitHub (clearing cache)...';
-            loadingDiv.style.display = 'flex';
-            errorDiv.style.display = 'none';
-            prsDiv.innerHTML = '';
-            
-            vscode.postMessage({
-                command: 'resyncGitHubPRs'
-            });
-        }
-        
-        function createGitHubPR() {
-            vscode.postMessage({
-                command: 'createGitHubPR'
-            });
-        }
-        
-        function autoMergePRs() {
-            vscode.postMessage({
-                command: 'autoMergePRs'
-            });
-        }
-        
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffMs = now.getTime() - date.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            
-            if (diffDays === 0) {
-                return 'today';
-            } else if (diffDays === 1) {
-                return 'yesterday';
-            } else if (diffDays < 7) {
-                return diffDays + ' days ago';
-            } else {
-                return date.toLocaleDateString();
-            }
-        }
-        
-        // Listen for messages from the extension
-        window.addEventListener('message', event => {
-            const message = event.data;
-            
-            switch (message.command) {
-                case 'showMessage':
-                    console.log('Message from extension:', message.text);
-                    break;
-                    
-                case 'mcpToolResult':
-                    const toolName = message.toolName;
-                    const resultDiv = document.getElementById(toolName + '-result');
-                    const errorDiv = document.getElementById(toolName + '-error');
-                    
-                    if (message.error) {
-                        errorDiv.textContent = message.error;
-                        errorDiv.style.display = 'block';
-                    } else {
-                        resultDiv.textContent = JSON.stringify(message.result, null, 2);
-                        resultDiv.style.display = 'block';
-                    }
-                    break;
-                    
-                case 'githubPRsResult':
-                    const githubLoading = document.getElementById('github-loading');
-                    const githubError = document.getElementById('github-error');
-                    const githubPRs = document.getElementById('github-prs');
-                    const lastSync = document.getElementById('last-sync');
-                    const syncTime = document.getElementById('sync-time');
-                    
-                    githubLoading.style.display = 'none';
-                    
-                    if (message.error) {
-                        githubError.textContent = message.error;
-                        githubError.style.display = 'block';
-                    } else {
-                        githubError.style.display = 'none';
-                        
-                        if (message.prs && message.prs.length > 0) {
-                            githubPRs.innerHTML = '';
-                            message.prs.forEach(pr => {
-                                const prItem = document.createElement('div');
-                                prItem.className = 'github-pr';
-                                prItem.addEventListener('click', () => openGitHubPR(pr.number, pr.html_url));
-
-                                const header = document.createElement('div');
-                                header.className = 'pr-header';
-
-                                const title = document.createElement('h4');
-                                title.className = 'pr-title';
-                                title.textContent = pr.title;
-
-                                const number = document.createElement('span');
-                                number.className = 'pr-number';
-                                number.textContent = '#' + pr.number;
-
-                                header.appendChild(title);
-                                header.appendChild(number);
-
-                                const meta = document.createElement('div');
-                                meta.className = 'pr-meta';
-
-                                const status = document.createElement('span');
-                                status.className = 'pr-status ' + pr.state;
-                                status.textContent = pr.state;
-
-                                const author = document.createElement('span');
-                                author.textContent = 'by ' + (pr.user?.login || 'unknown');
-
-                                const updated = document.createElement('span');
-                                updated.textContent = formatDate(pr.updated_at);
-
-                                meta.appendChild(status);
-                                meta.appendChild(author);
-                                meta.appendChild(updated);
-
-                                prItem.appendChild(header);
-                                prItem.appendChild(meta);
-
-                                githubPRs.appendChild(prItem);
-                            });
-                        } else {
-                            githubPRs.innerHTML = '<p style="text-align: center; color: var(--vscode-descriptionForeground);">No pull requests found.</p>';
-                        }
-                        
-                        // Update last sync time
-                        syncTime.textContent = new Date().toLocaleTimeString();
-                        lastSync.style.display = 'block';
-                    }
-                    break;
-            }
-        });
-        
-        function openGitHubPR(prNumber, url) {
-            vscode.postMessage({
-                command: 'openGitHubPR',
-                prNumber: prNumber,
-                url: url
-            });
-        }
-    </script>
-</body>
-</html>`;
+    `;
   }
 
-  private _getHtmlForWebviewOld(webview: vscode.Webview) {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kodus Tools</title>
-    <style>
-        body {
-            font-family: var(--vscode-font-family);
-            font-size: var(--vscode-font-size);
-            color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
-            padding: 10px;
-            margin: 0;
-        }
-        
-        .container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        .header h2 {
-            margin: 0;
-            color: var(--vscode-textLink-foreground);
-        }
-        
-        .button {
-            background-color: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background-color 0.2s;
-            width: 100%;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .button:hover {
-            background-color: var(--vscode-button-hoverBackground);
-        }
-        
-        .button:active {
-            background-color: var(--vscode-button-activeBackground);
-        }
-        
-        .icon {
-            font-size: 16px;
-        }
-        
-        .section {
-            margin-top: 15px;
-        }
-        
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--vscode-foreground);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status {
-            text-align: center;
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground);
-            margin-top: 15px;
-            padding: 8px;
-            background-color: var(--vscode-editor-background);
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
+  private _getWebviewHeader() {
+    return `
         <div class="header">
-            <h2>🚀 Kodus Tools</h2>
+            <h1>🚀 Kodus Tools</h1>
+            <p>Open source development tools and utilities</p>
+        </div>
+    `;
+  }
+
+  private _getWebviewBody() {
+    return `
+        <div class="section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="tools-grid">
+                <div class="tool-card" onclick="executeCommand('kodus-extension.formatJson')">
+                    <div class="tool-icon">📄</div>
+                    <div class="tool-title">Format JSON</div>
+                    <div class="tool-description">Format and validate JSON files</div>
+                </div>
+                
+                <div class="tool-card" onclick="executeCommand('kodus-extension.convertCase')">
+                    <div class="tool-icon">🔄</div>
+                    <div class="tool-title">Convert Case</div>
+                    <div class="tool-description">Convert text between different cases</div>
+                </div>
+                
+                <div class="tool-card" onclick="executeCommand('kodus-extension.insertTimestamp')">
+                    <div class="tool-icon">⏰</div>
+                    <div class="tool-title">Insert Timestamp</div>
+                    <div class="tool-description">Insert current timestamp</div>
+                </div>
+                
+                <div class="tool-card" onclick="executeCommand('kodus-extension.insertSnippet')">
+                    <div class="tool-icon">📝</div>
+                    <div class="tool-title">Insert Snippet</div>
+                    <div class="tool-description">Insert code snippets</div>
+                </div>
+            </div>
         </div>
         
+        <!-- MCP Tools Section -->
         <div class="section">
-            <div class="section-title">Quick Actions</div>
-            <button class="button" onclick="formatJson()">
-                <span class="icon">📄</span>
-                Format JSON
-            </button>
-            <button class="button" onclick="convertCase()">
-                <span class="icon">🔄</span>
-                Convert Case
-            </button>
-            <button class="button" onclick="insertTimestamp()">
-                <span class="icon">⏰</span>
-                Insert Timestamp
-            </button>
-            <button class="button" onclick="insertSnippet()">
-                <span class="icon">📝</span>
-                Insert Snippet
-            </button>
+            <h2 class="section-title">MCP Tools</h2>
+            <div class="mcp-tools">
+                <div class="mcp-tool">
+                    <div class="mcp-tool-header">
+                        <div class="mcp-tool-name">Code Analysis</div>
+                    </div>
+                    <div class="mcp-tool-description">Analyze code quality and suggest improvements</div>
+                    <button class="btn" onclick="executeMcpTool('code-analysis')">Execute</button>
+                    <button class="btn secondary" onclick="clearMcpResult('code-analysis')">Clear</button>
+                    <div id="code-analysis-result" class="result" style="display: none;"></div>
+                    <div id="code-analysis-error" class="error" style="display: none;"></div>
+                </div>
+                
+                <div class="mcp-tool">
+                    <div class="mcp-tool-header">
+                        <div class="mcp-tool-name">Documentation Generator</div>
+                    </div>
+                    <div class="mcp-tool-description">Generate documentation from code comments</div>
+                    <button class="btn" onclick="executeMcpTool('doc-generator')">Execute</button>
+                    <button class="btn secondary" onclick="clearMcpResult('doc-generator')">Clear</button>
+                    <div id="doc-generator-result" class="result" style="display: none;"></div>
+                    <div id="doc-generator-error" class="error" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- GitHub Sync Section -->
+        <div class="section">
+            <h2 class="section-title">GitHub Integration</h2>
+            <div class="github-sync">
+                <div class="mcp-tool-header">
+                    <div class="mcp-tool-name">GitHub PR Sync</div>
+                    <span id="last-sync" class="loading" style="display: none;">Last sync: <span id="sync-time"></span></span>
+                </div>
+                <div class="mcp-tool-description">Sync and manage pull requests with GitHub</div>
+                <button class="btn" onclick="fetchGitHubPRs()">Sync PRs</button>
+                <button class="btn" onclick="resyncGitHubPRs()" style="background: var(--vscode-gitDecoration-modifiedResourceForeground);">Resync</button>
+                <button class="btn secondary" onclick="createGitHubPR()">Create PR</button>
+                <button class="btn" onclick="autoMergePRs()">Auto Merge</button>
+                
+                <div id="github-loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    Syncing with GitHub...
+                </div>
+                
+                <div id="github-error" class="error" style="display: none;"></div>
+                <div id="github-prs"></div>
+            </div>
         </div>
         
         <div class="status">
-            Ready to help! ✨
+            <p>Ready to help! ✨</p>
         </div>
-    </div>
-
-    <script>
-        const vscode = acquireVsCodeApi();
-        
-        function formatJson() {
-            vscode.postMessage({
-                command: 'formatJson'
-            });
-        }
-        
-        function convertCase() {
-            vscode.postMessage({
-                command: 'convertCase'
-            });
-        }
-        
-        function insertTimestamp() {
-            vscode.postMessage({
-                command: 'insertTimestamp'
-            });
-        }
-        
-        function insertSnippet() {
-            vscode.postMessage({
-                command: 'insertSnippet'
-            });
-        }
-    </script>
-</body>
-</html>`;
+    `;
   }
 
   private async _formatJson() {
@@ -943,7 +557,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     // Import the converter function
     const { convertTextCase } = await import('@utils/caseConverter');
-    const converted = convertTextCase(text, selected.label as CaseConverterType);
+    const converted = convertTextCase(
+      text,
+      selected.label as CaseConverterType
+    );
 
     await editor.edit(editBuilder => {
       editBuilder.replace(editor.selection, converted);
@@ -1096,7 +713,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _sendAIMessage(content: string, context?: Record<string, unknown>) {
+  private async _sendAIMessage(
+    content: string,
+    context?: Record<string, unknown>
+  ) {
     if (!this.aiProvider || !this.aiProvider.connected) {
       if (this._view) {
         this._view.webview.postMessage({
@@ -1133,7 +753,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _fetchGitHubPRs(webview: vscode.Webview, forceResync: boolean = false) {
+  private async _fetchGitHubPRs(
+    webview: vscode.Webview,
+    forceResync: boolean = false
+  ) {
     try {
       const prs = await this._getGitHubPRs({ forceResync });
       webview.postMessage({
@@ -1152,13 +775,17 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     try {
       const repository = await this._getGitRepository();
       if (!repository) {
-        vscode.window.showWarningMessage('No Git repository found to create a PR');
+        vscode.window.showWarningMessage(
+          'No Git repository found to create a PR'
+        );
         return;
       }
 
       const remoteUrl = this._getRepositoryRemoteUrl(repository);
       if (!remoteUrl) {
-        vscode.window.showWarningMessage('No Git remote URL found to create a PR');
+        vscode.window.showWarningMessage(
+          'No Git remote URL found to create a PR'
+        );
         return;
       }
 
@@ -1170,7 +797,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
       const headBranch = repository.state.HEAD?.name;
       if (!headBranch) {
-        vscode.window.showWarningMessage('Unable to determine the current branch');
+        vscode.window.showWarningMessage(
+          'Unable to determine the current branch'
+        );
         return;
       }
 
@@ -1197,13 +826,17 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     try {
       const repository = await this._getGitRepository();
       if (!repository) {
-        vscode.window.showWarningMessage('No Git repository found to auto-merge PRs');
+        vscode.window.showWarningMessage(
+          'No Git repository found to auto-merge PRs'
+        );
         return;
       }
 
       const remoteUrl = this._getRepositoryRemoteUrl(repository);
       if (!remoteUrl) {
-        vscode.window.showWarningMessage('No Git remote URL found to auto-merge PRs');
+        vscode.window.showWarningMessage(
+          'No Git remote URL found to auto-merge PRs'
+        );
         return;
       }
 
@@ -1215,13 +848,17 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
       const headBranch = repository.state.HEAD?.name;
       if (!headBranch) {
-        vscode.window.showWarningMessage('Unable to determine the current branch');
+        vscode.window.showWarningMessage(
+          'Unable to determine the current branch'
+        );
         return;
       }
 
       const pr = await this._getOpenPullRequestForBranch(repoInfo, headBranch);
       if (!pr) {
-        vscode.window.showInformationMessage(`No open PR found for branch "${headBranch}".`);
+        vscode.window.showInformationMessage(
+          `No open PR found for branch "${headBranch}".`
+        );
         return;
       }
 
@@ -1240,7 +877,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       }
 
       await this._mergePullRequest(repoInfo, pr.number, mergeMethod);
-      vscode.window.showInformationMessage(`PR #${pr.number} merged with ${mergeMethod}.`);
+      vscode.window.showInformationMessage(
+        `PR #${pr.number} merged with ${mergeMethod}.`
+      );
     } catch (error) {
       vscode.window.showErrorMessage(
         `Failed to auto merge PRs: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1248,14 +887,20 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _openGitHubPR(prNumber: number, url?: string, repoOverride?: string) {
+  private async _openGitHubPR(
+    prNumber: number,
+    url?: string,
+    repoOverride?: string
+  ) {
     try {
       if (url) {
         vscode.env.openExternal(vscode.Uri.parse(url));
         return;
       }
 
-      const repoInfoFromOverride = repoOverride ? this._parseGitHubRepo(repoOverride) : null;
+      const repoInfoFromOverride = repoOverride
+        ? this._parseGitHubRepo(repoOverride)
+        : null;
       if (repoInfoFromOverride) {
         const prUrl = `https://github.com/${repoInfoFromOverride.owner}/${repoInfoFromOverride.repo}/pull/${prNumber}`;
         vscode.env.openExternal(vscode.Uri.parse(prUrl));
@@ -1289,11 +934,15 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _handleGitHubPRMessage(webview: vscode.Webview, message: GitHubPRMessage) {
+  private async _handleGitHubPRMessage(
+    webview: vscode.Webview,
+    message: GitHubPRMessage
+  ) {
     const command = message.command;
     const data = message.data || {};
     const forceResync = command === 'resync-github-prs' || data.force === true;
-    const requestId = typeof data.requestId === 'string' ? data.requestId : undefined;
+    const requestId =
+      typeof data.requestId === 'string' ? data.requestId : undefined;
 
     try {
       const prs = await this._getGitHubPRs({
@@ -1311,7 +960,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       webview.postMessage({
         command: `${command}-response`,
-        error: error instanceof Error ? error.message : 'Failed to process request',
+        error:
+          error instanceof Error ? error.message : 'Failed to process request',
         requestId,
       });
     }
@@ -1333,7 +983,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       webview.postMessage({
         command: `${command}-response`,
-        error: error instanceof Error ? error.message : 'Failed to process request',
+        error:
+          error instanceof Error ? error.message : 'Failed to process request',
         requestId,
       });
     }
@@ -1376,7 +1027,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
         requestId,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to execute MCP tool';
+      const message =
+        error instanceof Error ? error.message : 'Failed to execute MCP tool';
       webview.postMessage({
         command: 'mcpToolResult',
         toolName,
@@ -1408,10 +1060,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
   private async _runCodeAnalysis(document: vscode.TextDocument) {
     const diagnostics = vscode.languages.getDiagnostics(document.uri);
-    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-      'vscode.executeDocumentSymbolProvider',
-      document.uri
-    );
+    const symbols = await vscode.commands.executeCommand<
+      vscode.DocumentSymbol[]
+    >('vscode.executeDocumentSymbolProvider', document.uri);
 
     const counts = diagnostics.reduce(
       (acc, diag) => {
@@ -1434,11 +1085,14 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       { errors: 0, warnings: 0, infos: 0, hints: 0 }
     );
 
-    const symbolKindCounts = (symbols ?? []).reduce<Record<string, number>>((acc, symbol) => {
-      const kind = vscode.SymbolKind[symbol.kind] ?? 'Unknown';
-      acc[kind] = (acc[kind] ?? 0) + 1;
-      return acc;
-    }, {});
+    const symbolKindCounts = (symbols ?? []).reduce<Record<string, number>>(
+      (acc, symbol) => {
+        const kind = vscode.SymbolKind[symbol.kind] ?? 'Unknown';
+        acc[kind] = (acc[kind] ?? 0) + 1;
+        return acc;
+      },
+      {}
+    );
 
     const topSymbols = (symbols ?? []).map(symbol => ({
       name: symbol.name,
@@ -1468,12 +1122,13 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private async _runDocGenerator(document: vscode.TextDocument) {
-    const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-      'vscode.executeDocumentSymbolProvider',
-      document.uri
-    );
+    const symbols = await vscode.commands.executeCommand<
+      vscode.DocumentSymbol[]
+    >('vscode.executeDocumentSymbolProvider', document.uri);
 
-    const outline = (symbols ?? []).map(symbol => `- ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`);
+    const outline = (symbols ?? []).map(
+      symbol => `- ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`
+    );
     const markdown = [
       `# ${document.fileName.split(/[\\/]/).pop() ?? document.fileName}`,
       '',
@@ -1489,7 +1144,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     };
   }
 
-  private _formatDiagnosticSeverity(severity: vscode.DiagnosticSeverity): string {
+  private _formatDiagnosticSeverity(
+    severity: vscode.DiagnosticSeverity
+  ): string {
     switch (severity) {
       case vscode.DiagnosticSeverity.Error:
         return 'error';
@@ -1523,7 +1180,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       cachedEntry = undefined;
     }
 
-    const fetchResult = await this._fetchGitHubPRsFromApi(repoInfo, cachedEntry?.etag);
+    const fetchResult = await this._fetchGitHubPRsFromApi(
+      repoInfo,
+      cachedEntry?.etag
+    );
     if (fetchResult.notModified && cachedEntry) {
       cachedEntry.fetchedAt = Date.now();
       await this._setGitHubPRCacheEntry(cacheKey, cachedEntry);
@@ -1575,7 +1235,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private async _getGitRepository(): Promise<Repository | undefined> {
-    const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
+    const gitExtension =
+      vscode.extensions.getExtension<GitExtension>('vscode.git');
     if (!gitExtension) {
       return undefined;
     }
@@ -1610,12 +1271,18 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       return undefined;
     }
 
-    const preferredRemote = remotes.find(remote => remote.name === 'origin') ?? remotes[0];
+    const preferredRemote =
+      remotes.find(remote => remote.name === 'origin') ?? remotes[0];
     return preferredRemote.fetchUrl || preferredRemote.pushUrl;
   }
 
-  private _parseGitHubRepo(input: string): { owner: string; repo: string } | null {
-    const normalized = input.trim().replace(/\.git$/i, '').replace(/\/$/, '');
+  private _parseGitHubRepo(
+    input: string
+  ): { owner: string; repo: string } | null {
+    const normalized = input
+      .trim()
+      .replace(/\.git$/i, '')
+      .replace(/\/$/, '');
     const patterns = [
       /^git@github\.com:([^/]+)\/([^/]+)$/i,
       /^ssh:\/\/git@github\.com\/([^/]+)\/([^/]+)$/i,
@@ -1642,7 +1309,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private async _fetchGitHubPRsFromApi(
     repoInfo: GitHubRepoInfo,
     etag?: string
-  ): Promise<{ prs: GitHubPullRequest[]; etag?: string; notModified?: boolean }> {
+  ): Promise<{
+    prs: GitHubPullRequest[];
+    etag?: string;
+    notModified?: boolean;
+  }> {
     const url = this._buildGitHubPullsUrl(repoInfo);
 
     let token = await this._getGitHubAuthToken(false);
@@ -1677,7 +1348,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     repoInfo: GitHubRepoInfo,
     headBranch: string
   ): Promise<GitHubPullRequest | null> {
-    const url = new URL(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`);
+    const url = new URL(
+      `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`
+    );
     url.searchParams.set('state', 'open');
     url.searchParams.set('head', `${repoInfo.owner}:${headBranch}`);
     url.searchParams.set('per_page', '1');
@@ -1710,7 +1383,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   ) {
     const token = await this._getGitHubAuthToken(true);
     if (!token) {
-      throw new Error('GitHub authentication is required to merge pull requests.');
+      throw new Error(
+        'GitHub authentication is required to merge pull requests.'
+      );
     }
 
     const url = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls/${prNumber}/merge`;
@@ -1725,7 +1400,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _pickMergeMethod(): Promise<'merge' | 'squash' | 'rebase' | undefined> {
+  private async _pickMergeMethod(): Promise<
+    'merge' | 'squash' | 'rebase' | undefined
+  > {
     const selection = await vscode.window.showQuickPick(
       [
         {
@@ -1753,7 +1430,9 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private _buildGitHubPullsUrl(repoInfo: GitHubRepoInfo): string {
-    const url = new URL(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`);
+    const url = new URL(
+      `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/pulls`
+    );
     url.searchParams.set('state', 'all');
     url.searchParams.set('sort', 'updated');
     url.searchParams.set('direction', 'desc');
@@ -1767,7 +1446,11 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private async _requestGitHub(
     url: string,
     token?: string,
-    options?: { method?: string; body?: string; headers?: Record<string, string> }
+    options?: {
+      method?: string;
+      body?: string;
+      headers?: Record<string, string>;
+    }
   ): Promise<Response> {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
@@ -1790,11 +1473,17 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  private async _getGitHubAuthToken(createIfNone: boolean): Promise<string | undefined> {
+  private async _getGitHubAuthToken(
+    createIfNone: boolean
+  ): Promise<string | undefined> {
     try {
-      const session = await vscode.authentication.getSession('github', ['repo'], {
-        createIfNone,
-      });
+      const session = await vscode.authentication.getSession(
+        'github',
+        ['repo'],
+        {
+          createIfNone,
+        }
+      );
       return session?.accessToken;
     } catch {
       return undefined;
@@ -1802,7 +1491,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private async _getGitHubErrorMessage(response: Response): Promise<string> {
-    if (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0') {
+    if (
+      response.status === 403 &&
+      response.headers.get('x-ratelimit-remaining') === '0'
+    ) {
       return 'GitHub API rate limit exceeded. Sign in to GitHub to increase the limit.';
     }
 
@@ -1840,7 +1532,12 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
       .filter(ref => ref.type === RefType.RemoteHead && ref.name)
       .map(ref => ref.name as string);
 
-    const preferred = ['origin/main', 'origin/master', 'upstream/main', 'upstream/master'];
+    const preferred = [
+      'origin/main',
+      'origin/master',
+      'upstream/main',
+      'upstream/master',
+    ];
     for (const candidate of preferred) {
       if (refs.includes(candidate)) {
         return candidate.split('/').slice(1).join('/') || candidate;
@@ -1865,10 +1562,15 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   }
 
   private _getGitHubPRCache(): GitHubPRCache {
-    return this.context.workspaceState.get<GitHubPRCache>(this.githubPRCacheKey, {});
+    return this.context.workspaceState.get<GitHubPRCache>(
+      this.githubPRCacheKey,
+      {}
+    );
   }
 
-  private _getGitHubPRCacheEntry(cacheKey: string): GitHubPRCacheEntry | undefined {
+  private _getGitHubPRCacheEntry(
+    cacheKey: string
+  ): GitHubPRCacheEntry | undefined {
     const cache = this._getGitHubPRCache();
     return cache[cacheKey];
   }
@@ -1889,7 +1591,10 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     return cachedEntry.prs;
   }
 
-  private async _setGitHubPRCacheEntry(cacheKey: string, entry: GitHubPRCacheEntry) {
+  private async _setGitHubPRCacheEntry(
+    cacheKey: string,
+    entry: GitHubPRCacheEntry
+  ) {
     const cache = this._getGitHubPRCache();
     cache[cacheKey] = entry;
     await this.context.workspaceState.update(this.githubPRCacheKey, cache);
