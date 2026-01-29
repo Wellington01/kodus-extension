@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import type { AIConfig, AIMessage } from '@types';
+import type { AIConfig, AIMessage, AIChatMessage } from '@types';
 
 export class AIChatService {
-  constructor(private config: AIConfig) {}
+  constructor(private config: AIConfig) { }
 
   /**
    * Criar webview panel para chat AI
@@ -35,7 +35,7 @@ export class AIChatService {
    * Processar mensagem do webview
    */
   private async handleWebviewMessage(
-    message: any,
+    message: AIChatMessage,
     panel: vscode.WebviewPanel,
     context: vscode.ExtensionContext
   ): Promise<void> {
@@ -62,7 +62,7 @@ export class AIChatService {
       // Simular resposta
       const response = await this.simulateAIResponse(content);
 
-      panel..postMessage({
+      panel.webview.postMessage({
         command: 'aiResponse',
         content: response,
       });

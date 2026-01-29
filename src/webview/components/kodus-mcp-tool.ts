@@ -206,32 +206,66 @@ export class KodusMcpTool extends LitElement {
     this.error = null;
   }
 
-  private _sendMessageToExtension(command: string, data: any) {
+  private _sendMessageToExtension(command: string, data: Record<string, unknown>) {
     return new Promise((resolve, reject) => {
-      const message = { command, data };
-      
+      const requestId = this._createRequestId();
+      const message = { command, data: { ...data, requestId } };
+      const vscodeApi = this._getVsCodeApi();
+
       // Send message to webview provider
-      window.parent.postMessage(message, '*');
-      
-      // Listen for response
-      const handleResponse = (event: MessageEvent) => {
-        if (event.data.command === `${command}-response`) {
-          window.removeEventListener('message', handleResponse);
-          if (event.data.error) {
-            reject(new Error(event.data.error));
-          } else {
-            resolve(event.data.result);
-          }
+      vscodeApi?.postMessage ? vscodeApi.postMessage(message) : window.parent.postMessage(message, '*');
+
+      let settled = false;
+      const timeoutId = window.setTimeout(() => {
+        if (settled) {
+          return;
         }
-      };
-      
-      window.addEventListener('message', handleResponse);
-      
-      // Timeout after 30 seconds
-      setTimeout(() => {
+        settled = true;
         window.removeEventListener('message', handleResponse);
         reject(new Error('Request timeout'));
       }, 30000);
+
+      const handleResponse = (event: MessageEvent) => {
+        if (event.data?.command !== `${command}-response`) {
+          return;
+        }
+        if (event.data?.requestId && event.data.requestId !== requestId) {
+          return;
+        }
+        if (!event.data?.requestId && requestId) {
+          return;
+        }
+
+        if (settled) {
+          return;
+        }
+        settled = true;
+        window.clearTimeout(timeoutId);
+        window.removeEventListener('message', handleResponse);
+        if (event.data.error) {
+          reject(new Error(event.data.error));
+        } else {
+          resolve(event.data.result);
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
     });
+  }
+
+  private _getVsCodeApi(): { postMessage: (message: unknown) => void } | undefined {
+    try {
+      return (window as typeof window & { acquireVsCodeApi?: () => { postMessage: (message: unknown) => void } })
+        .acquireVsCodeApi?.();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private _createRequestId() {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 }
