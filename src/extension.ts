@@ -54,5 +54,5 @@ export function activate(context: ExtensionContext) {
 }
 
 export function deactivate() {
-  console.log('Kodus Development Tools is now deactivated');
+  // Extension deactivated
 }

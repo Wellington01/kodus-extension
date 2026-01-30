@@ -38,5 +38,5 @@ export interface AnalysisResult {
 
 export interface AICommandContext {
   config: AIConfig;
-  context: any;
+  context?: Record<string, unknown>;
 }
