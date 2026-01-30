@@ -86,13 +86,6 @@ export class AIChatService {
   }
 
   /**
-   * Simular resposta do AI (para desenvolvimento)
-   */
-  
-    return `AI Response to: "${message}"\n\nThis is a simulated response. In a real implementation, this would be sent to your AI service and streamed back in real-time.`;
-  }
-
-  /**
    * Gerar HTML para o chat
    */
   private generateChatHtml(webview: vscode.Webview): string {
