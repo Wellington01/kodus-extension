@@ -71,3 +71,6 @@ export * from './github';
 
 // Re-export Webview message types
 export * from './webview-messages';
+
+// Re-export Workspace info types
+export * from './workspace-info';

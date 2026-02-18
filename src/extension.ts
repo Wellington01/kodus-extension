@@ -4,13 +4,10 @@ import { registerSnippetProvider } from '@providers/snippetProvider';
 import { KodusWebviewProvider } from '@webview/webviewProvider';
 import type { ExtensionContext } from '@types';
 
-export function activate(context: ExtensionContext) {
-  console.log('Kodus Development Tools is now active!');
-  console.log('VIOLATION: This is a console.log for testing the review process.');
-
+export async function activate(context: ExtensionContext) {
   // Registrar comandos de ações rápidas
   registerQuickActions(context);
-  
+
   // Registrar provider de snippets
   registerSnippetProvider(context);
 
@@ -24,32 +21,36 @@ export function activate(context: ExtensionContext) {
   );
 
   // Comando de boas-vindas
-  const welcomeCommand = vscode.commands.registerCommand('kodus-extension.welcome', () => {
-    vscode.window.showInformationMessage(
-      '🚀 Kodus Development Tools activated! Use Ctrl+Shift+P to access all features.',
-      'Open Commands'
-    ).then(selection => {
+  const welcomeCommand = vscode.commands.registerCommand(
+    'kodus-extension.welcome',
+    async () => {
+      const selection = await vscode.window.showInformationMessage(
+        '🚀 Kodus Development Tools activated! Use Ctrl+Shift+P to access all features.',
+        'Open Commands'
+      );
       if (selection === 'Open Commands') {
-        vscode.commands.executeCommand('workbench.action.showCommands');
+        await vscode.commands.executeCommand('workbench.action.showCommands');
       }
-    });
-  });
+    }
+  );
 
   context.subscriptions.push(welcomeCommand);
 
   // Mostrar mensagem de boas-vindas na primeira ativação
-  const isFirstActivation = context.globalState.get('kodus-extension.firstActivation', true);
+  const isFirstActivation = context.globalState.get(
+    'kodus-extension.firstActivation',
+    true
+  );
   if (isFirstActivation) {
-    vscode.window.showInformationMessage(
+    const selection = await vscode.window.showInformationMessage(
       '🎉 Welcome to Kodus Development Tools! This extension provides open-source development utilities.',
       'Show Commands',
       'Dismiss'
-    ).then(selection => {
-      if (selection === 'Show Commands') {
-        vscode.commands.executeCommand('workbench.action.showCommands');
-      }
-    });
-    context.globalState.update('kodus-extension.firstActivation', false);
+    );
+    if (selection === 'Show Commands') {
+      await vscode.commands.executeCommand('workbench.action.showCommands');
+    }
+    await context.globalState.update('kodus-extension.firstActivation', false);
   }
 }
 

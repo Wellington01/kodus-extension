@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { ExtensionContext } from '@types';
+import type { ExtensionContext, TechnicalInfo } from '@types';
 import { WorkspaceInfoService } from '@utils/workspaceInfo';
 
 export class TechnicalInfoCommand {
@@ -45,7 +45,7 @@ export class TechnicalInfoCommand {
     }
   }
 
-  private async displayTechnicalInfo(info: any): Promise<void> {
+  private async displayTechnicalInfo(info: TechnicalInfo): Promise<void> {
     // Criar um documento com todas as informações técnicas
     const content = this.formatTechnicalInfo(info);
 
@@ -60,20 +60,21 @@ export class TechnicalInfoCommand {
     this.showSummary(info);
   }
 
-  private formatTechnicalInfo(info: any): string {
+  private formatTechnicalInfo(info: TechnicalInfo): string {
     return JSON.stringify(info, null, 2);
   }
 
-  private showSummary(info: any): void {
+  private showSummary(info: TechnicalInfo): void {
+    const workspaceInfo = info.workspace as { workspaceFolders?: unknown[]; openDocuments: unknown[] };
     const summary = `
 📊 RESUMO TÉCNICO DO WORKSPACE:
 
 🔧 Workspace:
-• ${info.workspace.workspaceFolders?.length || 0} pasta(s) aberta(s)
-• ${info.workspace.openDocuments.length} arquivo(s) aberto(s)
+• ${workspaceInfo.workspaceFolders?.length ?? 0} pasta(s) aberta(s)
+• ${workspaceInfo.openDocuments.length} arquivo(s) aberto(s)
 
 🐛 Diagnósticos:
-• ${info.diagnostics.reduce((total: number, file: any) => total + file.diagnostics.length, 0)} problema(s) encontrado(s)
+• ${info.diagnostics.reduce((total, file) => total + file.diagnostics.length, 0)} problema(s) encontrado(s)
 • ${info.diagnostics.length} arquivo(s) com problemas
 
 🌐 Linguagens:

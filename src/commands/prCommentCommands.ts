@@ -11,6 +11,14 @@ import {
   showWarning,
 } from '@utils/editorHelpers';
 
+interface GitChangeLike {
+  resourceUri?: { fsPath?: string; path?: string };
+  uri?: { fsPath?: string; path?: string };
+  status?: number;
+  type?: number;
+  resourceGroupType?: number;
+}
+
 export function registerPrCommentCommands(context: ExtensionContext) {
   const validateCommand = vscode.commands.registerCommand(
     'kodus-extension.validatePrComment',
@@ -159,7 +167,7 @@ async function collectGitContext(): Promise<{ branchName?: string; changes: stri
       ...(repo.state?.mergeChanges ?? []),
     ];
 
-    changeGroups.forEach((change: any) => {
+    changeGroups.forEach((change: GitChangeLike) => {
       const label = formatChange(change, rootPath);
       if (label) {
         changes.push(label);
@@ -172,7 +180,7 @@ async function collectGitContext(): Promise<{ branchName?: string; changes: stri
   return { branchName, changes: Array.from(new Set(changes)) };
 }
 
-function formatChange(change: any, rootPath?: string): string {
+function formatChange(change: GitChangeLike, rootPath?: string): string {
   const uri = change?.resourceUri ?? change?.uri;
   const filePath =
     uri?.fsPath || uri?.path || (typeof uri === 'string' ? uri : '');
@@ -188,7 +196,7 @@ function formatChange(change: any, rootPath?: string): string {
   return statusLabel ? `${statusLabel}: ${relative}` : relative;
 }
 
-function getStatusLabel(status: any): string {
+function getStatusLabel(status: string | number | undefined): string {
   if (typeof status === 'string') {
     return status;
   }

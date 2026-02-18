@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { DiagnosticEntry, GitRepositoryInfo } from '@types';
 
 /**
  * Utilitário para acessar informações técnicas do workspace e IDE
@@ -61,9 +62,9 @@ export class WorkspaceInfoService {
   /**
    * Obter diagnósticos (erros, warnings, info) de todos os arquivos
    */
-  async getDiagnostics() {
+  async getDiagnostics(): Promise<DiagnosticEntry[]> {
     const diagnostics = vscode.languages.getDiagnostics();
-    const result: any[] = [];
+    const result: DiagnosticEntry[] = [];
 
     for (const [uri, diags] of diagnostics) {
       result.push({
@@ -285,15 +286,24 @@ export class WorkspaceInfoService {
     const repositories = git.repositories;
 
     return {
-      repositories: repositories.map((repo: any) => ({
-        rootUri: repo.rootUri.toString(),
-        state: repo.state,
-        // Informações do repositório
-        head: repo.state.HEAD,
-        remotes: repo.state.remotes,
-        submodules: repo.state.submodules,
-        refs: repo.state.refs,
-      })),
+      repositories: repositories.map(
+        (repo: {
+          rootUri: { toString(): string };
+          state: {
+            HEAD: unknown;
+            remotes: unknown[];
+            submodules: unknown[];
+            refs: unknown[];
+          };
+        }): GitRepositoryInfo => ({
+          rootUri: repo.rootUri.toString(),
+          state: repo.state,
+          head: repo.state.HEAD,
+          remotes: repo.state.remotes,
+          submodules: repo.state.submodules,
+          refs: repo.state.refs,
+        })
+      ),
     };
   }
 
