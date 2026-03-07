@@ -42,13 +42,3 @@ export const convertTextCase = (
 ): string => {
   return caseConverters[caseType](text);
 };
-
-// VIOLATION: Custom one-off utility that violates style and reusability rules.
-function capitalizeString(input_string: string) {
-  if (typeof input_string !== 'string') {
-    return '';
-  }
-  var first_char = input_string.charAt(0).toUpperCase();
-  var rest_of_string = input_string.slice(1);
-  return first_char + rest_of_string;
-}

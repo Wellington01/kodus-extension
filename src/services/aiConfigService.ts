@@ -3,11 +3,11 @@ import type { AIConfig, AnalysisType } from '@types/ai';
 
 export class AIConfigService {
   private static readonly STORAGE_KEYS = {
-    SERVER_URL: 'ai.serverUrl',
-    API_KEY: 'ai.apiKey',
-    MODEL: 'ai.model',
-    TEMPERATURE: 'ai.temperature',
-    MAX_TOKENS: 'ai.maxTokens',
+    serverUrl: 'ai.serverUrl',
+    apiKey: 'ai.apiKey',
+    model: 'ai.model',
+    temperature: 'ai.temperature',
+    maxTokens: 'ai.maxTokens',
   } as const;
 
   constructor(private context: vscode.ExtensionContext) {}
@@ -16,15 +16,16 @@ export class AIConfigService {
    * Obter configuração atual do AI
    */
   async getConfig(): Promise<AIConfig> {
+    const keys = AIConfigService.STORAGE_KEYS;
     return {
-      serverUrl: this.context.globalState.get(this.STORAGE_KEYS.SERVER_URL, ''),
-      apiKey: this.context.globalState.get(this.STORAGE_KEYS.API_KEY, ''),
-      model: this.context.globalState.get(this.STORAGE_KEYS.MODEL, 'gpt-4'),
+      serverUrl: this.context.globalState.get(keys.serverUrl, ''),
+      apiKey: this.context.globalState.get(keys.apiKey, ''),
+      model: this.context.globalState.get(keys.model, 'gpt-4'),
       temperature: parseFloat(
-        this.context.globalState.get(this.STORAGE_KEYS.TEMPERATURE, '0.7')
+        this.context.globalState.get(keys.temperature, '0.7')
       ),
       maxTokens: parseInt(
-        this.context.globalState.get(this.STORAGE_KEYS.MAX_TOKENS, '2048')
+        this.context.globalState.get(keys.maxTokens, '2048')
       ),
     };
   }
@@ -33,11 +34,9 @@ export class AIConfigService {
    * Salvar configuração do AI
    */
   async saveConfig(config: Partial<AIConfig>): Promise<void> {
+    const keys = AIConfigService.STORAGE_KEYS;
     const updates = Object.entries(config).map(([key, value]) => {
-      const storageKey =
-        this.STORAGE_KEYS[
-          key.toUpperCase() as keyof typeof AIConfigService.STORAGE_KEYS
-        ];
+      const storageKey = keys[key as keyof typeof keys];
       return this.context.globalState.update(storageKey, value);
     });
 
