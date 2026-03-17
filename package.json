@@ -22,8 +22,6 @@
     "onCommand:kodus-extension.startAIChat",
     "onCommand:kodus-extension.analyzeCode",
     "onCommand:kodus-extension.explainCode",
-    "onCommand:kodus-extension.technicalInfo",
-    "onCommand:kodus-extension.advancedAnalysis",
     "onView:kodus-extension.webview"
   ],
   "main": "./out/extension.js",
@@ -36,22 +34,18 @@
       },
       {
         "command": "kodus-extension.formatJson",
-        "title": "Format JSON",
         "category": "Kodus"
       },
       {
         "command": "kodus-extension.convertCase",
-        "title": "Convert Case",
         "category": "Kodus"
       },
       {
         "command": "kodus-extension.insertTimestamp",
-        "title": "Insert Timestamp",
         "category": "Kodus"
       },
       {
         "command": "kodus-extension.insertSnippet",
-        "title": "Insert Code Snippet",
         "category": "Kodus"
       },
       {
@@ -61,7 +55,6 @@
       },
       {
         "command": "kodus-extension.startAIChat",
-        "title": "Start AI Chat",
         "category": "Kodus"
       },
       {
