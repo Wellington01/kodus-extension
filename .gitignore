@@ -82,6 +82,11 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test/
+<<<<<<< HEAD
 # Git worktrees
 .worktrees
 .worktrees/
+=======
+.opencode
+.specify
+>>>>>>> 677cbe5e349eda3eaeed622d461ea20a358c98cf

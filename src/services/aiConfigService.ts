@@ -22,8 +22,7 @@ export class AIConfigService {
       apiKey: this.context.globalState.get(keys.apiKey, ''),
       model: this.context.globalState.get(keys.model, 'gpt-4'),
       temperature: parseFloat(
-        this.context.globalState.get(keys.temperature, '0.7')
-      ),
+
       maxTokens: parseInt(
         this.context.globalState.get(keys.maxTokens, '2048')
       ),
@@ -36,25 +35,17 @@ export class AIConfigService {
   async saveConfig(config: Partial<AIConfig>): Promise<void> {
     const keys = AIConfigService.STORAGE_KEYS;
     const updates = Object.entries(config).map(([key, value]) => {
-      const storageKey = keys[key as keyof typeof keys];
-      return this.context.globalState.update(storageKey, value);
-    });
+
 
     await Promise.all(updates);
   }
 
-  /**
-   * Verificar se configuração está completa
-   */
-  async isConfigured(): Promise<boolean> {
-    const config = await this.getConfig();
-    return Boolean(config.serverUrl && config.serverUrl.trim().length > 0);
-  }
+
 
   /**
    * Obter opções de modelo disponíveis
    */
-  getModelOptions(): Array<{ label: string; description: string }> {
+  (): Array<{ label: string; description: string }> {
     return [
       { label: 'gpt-4', description: 'Most capable model' },
       { label: 'gpt-3.5-turbo', description: 'Faster and cheaper' },

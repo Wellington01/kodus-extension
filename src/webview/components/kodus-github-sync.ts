@@ -1,12 +1,28 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+interface PullRequest {
+  title: string;
+  number: number;
+  state: 'open' | 'closed' | 'merged';
+  user: {
+    login: string;
+  };
+  updated_at: string;
+  html_url?: string;
+}
+
+interface GitHubPRResponse {
+  prs?: PullRequest[];
+}
+
 @customElement('kodus-github-sync')
 export class KodusGithubSync extends LitElement {
   @property({ type: String }) repo = '';
   @property({ type: String }) branch = 'main';
-  @state() private prs: any[] = [];
+  @state() private prs: PullRequest[] = [];
   @state() private loading = false;
+  @state() private resyncing = false;
   @state() private error: string | null = null;
   @state() private lastSync: Date | null = null;
 
@@ -79,6 +95,11 @@ export class KodusGithubSync extends LitElement {
 
     .btn.success {
       background: var(--vscode-gitDecoration-addedResourceForeground);
+      color: var(--vscode-editor-background);
+    }
+
+    .btn.resync {
+      background: var(--vscode-gitDecoration-modifiedResourceForeground);
       color: var(--vscode-editor-background);
     }
 
@@ -301,6 +322,30 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
+  private async _resyncPRs() {
+    this.resyncing = true;
+    this.error = null;
+
+    // Clear existing data before resyncing
+    this.prs = [];
+    this.lastSync = null;
+
+    try {
+      const result = (await this._sendMessageToExtension('resync-github-prs', {
+        repo: this.repo,
+        branch: this.branch,
+        force: true,
+      })) as GitHubPRResponse;
+
+      this.prs = result.prs || [];
+      this.lastSync = new Date();
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Failed to resync PRs';
+    } finally {
+      this.resyncing = false;
+    }
+  }
+
   private async _createPR() {
     try {
       await this._sendMessageToExtension('create-github-pr', {
@@ -329,7 +374,7 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _openPR(pr: any) {
+  private _openPR(pr: PullRequest) {
     this._sendMessageToExtension('open-github-pr', {
       repo: this.repo,
       prNumber: pr.number,
@@ -353,7 +398,10 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _sendMessageToExtension(command: string, data: any) {
+  private _sendMessageToExtension(
+    command: string,
+    data: Record<string, unknown>
+  ) {
     return new Promise((resolve, reject) => {
       const message = { command, data };
 
@@ -379,6 +427,53 @@ export class KodusGithubSync extends LitElement {
         window.removeEventListener('message', handleResponse);
         reject(new Error('Request timeout'));
       }, 30000);
+
+      const handleResponse = (event: MessageEvent) => {
+        if (event.data?.command !== `${command}-response`) {
+          return;
+        }
+        if (event.data?.requestId && event.data.requestId !== requestId) {
+          return;
+        }
+        if (!event.data?.requestId && requestId) {
+          return;
+        }
+
+        if (settled) {
+          return;
+        }
+        settled = true;
+        window.clearTimeout(timeoutId);
+        window.removeEventListener('message', handleResponse);
+        if (event.data.error) {
+          reject(new Error(event.data.error));
+        } else {
+          resolve(event.data.result);
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
     });
+  }
+
+  private _getVsCodeApi():
+    | { postMessage: (message: unknown) => void }
+    | undefined {
+    try {
+      return (
+        window as typeof window & {
+          acquireVsCodeApi?: () => { postMessage: (message: unknown) => void };
+        }
+      ).acquireVsCodeApi?.();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private _createRequestId() {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 }
