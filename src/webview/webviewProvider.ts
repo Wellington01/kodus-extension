@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
+import { MessageHandler } from '../messaging/MessageHandler';
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
@@ -8,9 +9,27 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private aiManager: AIManager;
   private aiProvider?: AIStreamProvider;
+  private messageHandler = new MessageHandler();
 
   constructor(private readonly context: ExtensionContext) {
     this.aiManager = new AIManager(context);
+    this.setupMessageHandlers();
+  }
+
+  private setupMessageHandlers() {
+    this.messageHandler.register('formatJson', () => this._formatJson());
+    this.messageHandler.register('convertCase', () => this._convertCase());
+    this.messageHandler.register('insertTimestamp', () =>
+      this._insertTimestamp()
+    );
+    this.messageHandler.register('insertSnippet', () => this._insertSnippet());
+    this.messageHandler.register('initializeAI', (msg: any) =>
+      this._initializeAI(msg.config)
+    );
+    this.messageHandler.register('sendAIMessage', (msg: any) =>
+      this._sendAIMessage(msg.content, msg.context)
+    );
+    this.messageHandler.register('disconnectAI', () => this._disconnectAI());
   }
 
   public resolveWebviewView(
@@ -29,31 +48,17 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-    // Handle messages from the webview
+    // Handle messages from the webview safely using the new MessageHandler
     webviewView.webview.onDidReceiveMessage(
-      message => {
-        switch (message.command) {
-          case 'formatJson':
-            this._formatJson();
-            return;
-          case 'convertCase':
-            this._convertCase();
-            return;
-          case 'insertTimestamp':
-            this._insertTimestamp();
-            return;
-          case 'insertSnippet':
-            this._insertSnippet();
-            return;
-          case 'initializeAI':
-            this._initializeAI(message.config);
-            return;
-          case 'sendAIMessage':
-            this._sendAIMessage(message.content, message.context);
-            return;
-          case 'disconnectAI':
-            this._disconnectAI();
-            return;
+      async message => {
+        try {
+          await this.messageHandler.handleMessage(message);
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`Webview Error: ${error.message}`);
+          webviewView.webview.postMessage({
+            command: 'error',
+            data: error.message,
+          });
         }
       },
       undefined,

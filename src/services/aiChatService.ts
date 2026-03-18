@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import type { AIConfig, AIMessage } from '@types';
+import { MessageHandler } from '../messaging/MessageHandler';
 
 export class AIChatService {
+  private messageHandler = new MessageHandler();
+
   constructor(private config: AIConfig) {}
 
   /**
@@ -18,36 +21,34 @@ export class AIChatService {
       }
     );
 
+    // Register handlers securely instead of a monolithic switch
+    this.messageHandler.register('sendMessage', (msg: any) =>
+      this.processMessage(msg.content, panel)
+    );
+    this.messageHandler.register('configureAI', () =>
+      vscode.commands.executeCommand('kodus-extension.configureAI')
+    );
+
     panel.webview.html = this.generateChatHtml(panel.webview);
 
     // Handle messages from webview
     panel.webview.onDidReceiveMessage(
       async message => {
-        await this.handleWebviewMessage(message, panel, context);
+        try {
+          await this.messageHandler.handleMessage(message);
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`Chat Error: ${error.message}`);
+          panel.webview.postMessage({
+            command: 'aiError',
+            error: error.message,
+          });
+        }
       },
       undefined,
       context.subscriptions
     );
 
     return panel;
-  }
-
-  /**
-   * Processar mensagem do webview
-   */
-  private async handleWebviewMessage(
-    message: any,
-    panel: vscode.WebviewPanel,
-    context: vscode.ExtensionContext
-  ): Promise<void> {
-    switch (message.command) {
-      case 'sendMessage':
-        await this.processMessage(message.content, panel);
-        break;
-      case 'configureAI':
-        await vscode.commands.executeCommand('kodus-extension.configureAI');
-        break;
-    }
   }
 
   /**
@@ -74,16 +75,6 @@ export class AIChatService {
         command: 'aiError',
         error: 'Failed to process message',
       });
-    }
-  }
-
-  // VIOLATION: Method with a silent catch block for testing the review process.
-  private async processMessageWithViolation(content: string): Promise<void> {
-    try {
-      // This would normally throw an error.
-      JSON.parse("{ 'invalidJSON' }");
-    } catch (error) {
-      // Silently ignoring the error, which is bad practice.
     }
   }
 

@@ -6,11 +6,10 @@ import type { ExtensionContext } from '@types';
 
 export function activate(context: ExtensionContext) {
   console.log('Kodus Development Tools is now active!');
-  console.log('VIOLATION: This is a console.log for testing the review process.');
 
   // Registrar comandos de ações rápidas
   registerQuickActions(context);
-  
+
   // Registrar provider de snippets
   registerSnippetProvider(context);
 
@@ -24,31 +23,41 @@ export function activate(context: ExtensionContext) {
   );
 
   // Comando de boas-vindas
-  const welcomeCommand = vscode.commands.registerCommand('kodus-extension.welcome', () => {
-    vscode.window.showInformationMessage(
-      '🚀 Kodus Development Tools activated! Use Ctrl+Shift+P to access all features.',
-      'Open Commands'
-    ).then(selection => {
-      if (selection === 'Open Commands') {
-        vscode.commands.executeCommand('workbench.action.showCommands');
-      }
-    });
-  });
+  const welcomeCommand = vscode.commands.registerCommand(
+    'kodus-extension.welcome',
+    () => {
+      vscode.window
+        .showInformationMessage(
+          '🚀 Kodus Development Tools activated! Use Ctrl+Shift+P to access all features.',
+          'Open Commands'
+        )
+        .then(selection => {
+          if (selection === 'Open Commands') {
+            vscode.commands.executeCommand('workbench.action.showCommands');
+          }
+        });
+    }
+  );
 
   context.subscriptions.push(welcomeCommand);
 
   // Mostrar mensagem de boas-vindas na primeira ativação
-  const isFirstActivation = context.globalState.get('kodus-extension.firstActivation', true);
+  const isFirstActivation = context.globalState.get(
+    'kodus-extension.firstActivation',
+    true
+  );
   if (isFirstActivation) {
-    vscode.window.showInformationMessage(
-      '🎉 Welcome to Kodus Development Tools! This extension provides open-source development utilities.',
-      'Show Commands',
-      'Dismiss'
-    ).then(selection => {
-      if (selection === 'Show Commands') {
-        vscode.commands.executeCommand('workbench.action.showCommands');
-      }
-    });
+    vscode.window
+      .showInformationMessage(
+        '🎉 Welcome to Kodus Development Tools! This extension provides open-source development utilities.',
+        'Show Commands',
+        'Dismiss'
+      )
+      .then(selection => {
+        if (selection === 'Show Commands') {
+          vscode.commands.executeCommand('workbench.action.showCommands');
+        }
+      });
     context.globalState.update('kodus-extension.firstActivation', false);
   }
 }

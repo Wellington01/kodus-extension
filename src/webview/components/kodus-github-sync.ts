@@ -174,8 +174,12 @@ export class KodusGithubSync extends LitElement {
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .error {
@@ -195,37 +199,38 @@ export class KodusGithubSync extends LitElement {
   `;
 
   render() {
-    abortController
     return html`
       <div class="sync-container">
         <div class="sync-header">
           <h3 class="sync-title">GitHub PR Sync</h3>
-          ${this.lastSync ? html`
-            <span class="last-sync">
-              Last sync: ${this.lastSync.toLocaleTimeString()}
-            </span>
-          ` : ''}
+          ${this.lastSync
+            ? html`
+                <span class="last-sync">
+                  Last sync: ${this.lastSync.toLocaleTimeString()}
+                </span>
+              `
+            : ''}
         </div>
-        
+
         <div class="sync-actions">
-          <button 
-            class="btn primary" 
+          <button
+            class="btn primary"
             ?disabled=${this.loading}
             @click=${this._fetchPRs}
           >
             ${this.loading ? 'Syncing...' : 'Sync PRs'}
           </button>
-          
-          <button 
-            class="btn secondary" 
+
+          <button
+            class="btn secondary"
             ?disabled=${this.loading}
             @click=${this._createPR}
           >
             Create PR
           </button>
-          
-          <button 
-            class="btn success" 
+
+          <button
+            class="btn success"
             ?disabled=${this.loading}
             @click=${this._mergePRs}
           >
@@ -233,40 +238,46 @@ export class KodusGithubSync extends LitElement {
           </button>
         </div>
 
-        ${this.loading ? html`
-          <div class="loading">
-            <div class="spinner"></div>
-            Syncing with GitHub...
-          </div>
-        ` : ''}
-
-        ${this.error ? html`
-          <div class="error">
-            <strong>Error:</strong> ${this.error}
-          </div>
-        ` : ''}
-
-        ${this.prs.length > 0 ? html`
-          <div class="pr-list">
-            ${this.prs.map(pr => html`
-              <div class="pr-item" @click=${() => this._openPR(pr)}>
-                <div class="pr-header">
-                  <h4 class="pr-title">${pr.title}</h4>
-                  <span class="pr-number">#${pr.number}</span>
-                </div>
-                <div class="pr-meta">
-                  <span class="pr-status ${pr.state}">${pr.state}</span>
-                  <span>by ${pr.user.login}</span>
-                  <span>${this._formatDate(pr.updated_at)}</span>
-                </div>
+        ${this.loading
+          ? html`
+              <div class="loading">
+                <div class="spinner"></div>
+                Syncing with GitHub...
               </div>
-            `)}
-          </div>
-        ` : html`
-          <div class="empty-state">
-            <p>No pull requests found. Click "Sync PRs" to fetch from GitHub.</p>
-          </div>
-        `}
+            `
+          : ''}
+        ${this.error
+          ? html`
+              <div class="error"><strong>Error:</strong> ${this.error}</div>
+            `
+          : ''}
+        ${this.prs.length > 0
+          ? html`
+              <div class="pr-list">
+                ${this.prs.map(
+                  pr => html`
+                    <div class="pr-item" @click=${() => this._openPR(pr)}>
+                      <div class="pr-header">
+                        <h4 class="pr-title">${pr.title}</h4>
+                        <span class="pr-number">#${pr.number}</span>
+                      </div>
+                      <div class="pr-meta">
+                        <span class="pr-status ${pr.state}">${pr.state}</span>
+                        <span>by ${pr.user.login}</span>
+                        <span>${this._formatDate(pr.updated_at)}</span>
+                      </div>
+                    </div>
+                  `
+                )}
+              </div>
+            `
+          : html`
+              <div class="empty-state">
+                <p>
+                  No pull requests found. Click "Sync PRs" to fetch from GitHub.
+                </p>
+              </div>
+            `}
       </div>
     `;
   }
@@ -278,9 +289,9 @@ export class KodusGithubSync extends LitElement {
     try {
       const result = await this._sendMessageToExtension('fetch-github-prs', {
         repo: this.repo,
-        branch: this.branch
+        branch: this.branch,
       });
-      
+
       this.prs = result.prs || [];
       this.lastSync = new Date();
     } catch (err) {
@@ -294,9 +305,9 @@ export class KodusGithubSync extends LitElement {
     try {
       await this._sendMessageToExtension('create-github-pr', {
         repo: this.repo,
-        branch: this.branch
+        branch: this.branch,
       });
-      
+
       // Refresh PRs after creating
       await this._fetchPRs();
     } catch (err) {
@@ -308,9 +319,9 @@ export class KodusGithubSync extends LitElement {
     try {
       await this._sendMessageToExtension('auto-merge-prs', {
         repo: this.repo,
-        branch: this.branch
+        branch: this.branch,
       });
-      
+
       // Refresh PRs after merging
       await this._fetchPRs();
     } catch (err) {
@@ -321,7 +332,7 @@ export class KodusGithubSync extends LitElement {
   private _openPR(pr: any) {
     this._sendMessageToExtension('open-github-pr', {
       repo: this.repo,
-      prNumber: pr.number
+      prNumber: pr.number,
     });
   }
 
@@ -330,7 +341,7 @@ export class KodusGithubSync extends LitElement {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'today';
     } else if (diffDays === 1) {
@@ -345,10 +356,10 @@ export class KodusGithubSync extends LitElement {
   private _sendMessageToExtension(command: string, data: any) {
     return new Promise((resolve, reject) => {
       const message = { command, data };
-      
+
       // Send message to webview provider
       window.parent.postMessage(message, '*');
-      
+
       // Listen for response
       const handleResponse = (event: MessageEvent) => {
         if (event.data.command === `${command}-response`) {
@@ -360,9 +371,9 @@ export class KodusGithubSync extends LitElement {
           }
         }
       };
-      
+
       window.addEventListener('message', handleResponse);
-      
+
       // Timeout after 30 seconds
       setTimeout(() => {
         window.removeEventListener('message', handleResponse);

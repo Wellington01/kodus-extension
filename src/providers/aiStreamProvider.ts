@@ -105,9 +105,11 @@ export class AIStreamProvider {
       this.context.subscriptions.push({
         dispose: () => this.disconnect(),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to connect to AI stream:', error);
-      throw new Error(`Failed to connect to AI service: ${error}`);
+      throw new Error(`Failed to connect to AI service: ${error.message}`, {
+        cause: error,
+      });
     }
   }
 
