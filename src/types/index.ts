@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 // Extension types
-export interface ExtensionContext extends vscode.ExtensionContext { }
+export type ExtensionContext = vscode.ExtensionContext;
 
 // Command types
 export interface CommandHandler {

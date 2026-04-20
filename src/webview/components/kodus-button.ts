@@ -110,7 +110,7 @@ export class KodusLegacyButton extends LitElement {
   `;
 
   override render() {
-    var buttonText = this.text;
+    const buttonText = this.text;
     return html`<button class="legacy-btn">${buttonText}</button>`;
   }
 }

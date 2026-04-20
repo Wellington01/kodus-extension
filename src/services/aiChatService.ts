@@ -1,30 +1,11 @@
 import * as vscode from 'vscode';
-import type { AIChatMessage, AIConfig } from '@types';
-
-const CHAT_PANEL_VIEW_TYPE = 'aiChat';
-const CHAT_PANEL_TITLE = 'AI Assistant';
-const CONFIGURE_AI_COMMAND = 'kodus-extension.configureAI';
-const AI_RESPONSE_DELAY_MS = 1000;
-
-const WEBVIEW_COMMANDS = {
-  SEND_MESSAGE: 'sendMessage',
-  CONFIGURE_AI: 'configureAI',
-  AI_RESPONSE: 'aiResponse',
-  AI_ERROR: 'aiError',
-} as const;
-
-type WebviewOutboundMessage =
-  | {
-      command: typeof WEBVIEW_COMMANDS.AI_RESPONSE;
-      content: string;
-    }
-  | {
-      command: typeof WEBVIEW_COMMANDS.AI_ERROR;
-      error: string;
-    };
+import type { AIConfig, AIMessage } from '@types';
+import { MessageHandler } from '../messaging/MessageHandler';
 
 export class AIChatService {
-  constructor(private readonly config: AIConfig) {}
+  private messageHandler = new MessageHandler();
+
+  constructor(private config: AIConfig) {}
 
   createChatPanel(context: vscode.ExtensionContext): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
@@ -37,11 +18,27 @@ export class AIChatService {
       }
     );
 
+    // Register handlers securely instead of a monolithic switch
+    this.messageHandler.register('sendMessage', (msg: any) =>
+      this.processMessage(msg.content, panel)
+    );
+    this.messageHandler.register('configureAI', () =>
+      vscode.commands.executeCommand('kodus-extension.configureAI')
+    );
+
     panel.webview.html = this.generateChatHtml(panel.webview);
 
     panel.webview.onDidReceiveMessage(
-      async (message: AIChatMessage) => {
-        await this.handleWebviewMessage(message, panel);
+      async message => {
+        try {
+          await this.messageHandler.handleMessage(message);
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`Chat Error: ${error.message}`);
+          panel.webview.postMessage({
+            command: 'aiError',
+            error: error.message,
+          });
+        }
       },
       undefined,
       context.subscriptions
@@ -50,20 +47,9 @@ export class AIChatService {
     return panel;
   }
 
-  private async handleWebviewMessage(
-    message: AIChatMessage,
-    panel: vscode.WebviewPanel
-  ): Promise<void> {
-    if (message.command === WEBVIEW_COMMANDS.SEND_MESSAGE) {
-      await this.processMessage(message.content, panel);
-      return;
-    }
-
-    if (message.command === WEBVIEW_COMMANDS.CONFIGURE_AI) {
-      await vscode.commands.executeCommand(CONFIGURE_AI_COMMAND);
-    }
-  }
-
+  /**
+   * Processar mensagem do usuário
+   */
   private async processMessage(
     content: string,
     panel: vscode.WebviewPanel
@@ -83,13 +69,9 @@ export class AIChatService {
     }
   }
 
-  private async postMessage(
-    panel: vscode.WebviewPanel,
-    message: WebviewOutboundMessage
-  ): Promise<void> {
-    await panel.webview.postMessage(message);
-  }
-
+  /**
+   * Simular resposta do AI (para desenvolvimento)
+   */
   private async simulateAIResponse(message: string): Promise<string> {
     await this.delay(AI_RESPONSE_DELAY_MS);
     return `AI Response to: "${message}"\n\nThis is a simulated response. In a real implementation, this would be sent to your AI service and streamed back in real-time.`;

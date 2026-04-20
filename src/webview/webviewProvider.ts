@@ -12,49 +12,7 @@ import type {
 } from '@types';
 import { hasGetAPI } from '@types';
 import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
-import type { CaseConverterType } from '@utils/caseConverter';
-
-interface GitHubApiPullRequest {
-  id: number;
-  number: number;
-  title: string;
-  state: 'open' | 'closed';
-  user: { login: string } | null;
-  updated_at: string;
-  html_url: string;
-  merged_at?: string | null;
-}
-
-interface GitHubRepoInfo {
-  owner: string;
-  repo: string;
-  branch?: string;
-}
-
-interface GitHubPRCacheEntry {
-  prs: GitHubPullRequest[];
-  fetchedAt: number;
-  etag?: string;
-}
-
-type GitHubPRCache = Record<string, GitHubPRCacheEntry>;
-
-const COMMANDS = {
-  FORMAT_JSON: 'formatJson',
-  CONVERT_CASE: 'convertCase',
-  INSERT_TIMESTAMP: 'insertTimestamp',
-  INSERT_SNIPPET: 'insertSnippet',
-  INITIALIZE_AI: 'initializeAI',
-  SEND_AI_MESSAGE: 'sendAIMessage',
-  DISCONNECT_AI: 'disconnectAI',
-  FETCH_GITHUB_PRS: 'fetchGitHubPRs',
-  RESYNC_GITHUB_PRS: 'resyncGitHubPRs',
-  CREATE_GITHUB_PR: 'createGitHubPR',
-  AUTO_MERGE_PRS: 'autoMergePRs',
-  OPEN_GITHUB_PR: 'openGitHubPR',
-  EXECUTE_COMMAND: 'executeCommand',
-  EXECUTE_MCP_TOOL: 'executeMcpTool',
-};
+import { MessageHandler } from '../messaging/MessageHandler';
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
@@ -62,11 +20,27 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private aiManager: AIManager;
   private aiProvider?: AIStreamProvider;
-  private readonly githubPRCacheKey = 'kodus.github.prs.cache';
-  private readonly githubPRCacheTtlMs = 5 * 60 * 1000;
+  private messageHandler = new MessageHandler();
 
   constructor(private readonly context: ExtensionContext) {
     this.aiManager = new AIManager(context);
+    this.setupMessageHandlers();
+  }
+
+  private setupMessageHandlers() {
+    this.messageHandler.register('formatJson', () => this._formatJson());
+    this.messageHandler.register('convertCase', () => this._convertCase());
+    this.messageHandler.register('insertTimestamp', () =>
+      this._insertTimestamp()
+    );
+    this.messageHandler.register('insertSnippet', () => this._insertSnippet());
+    this.messageHandler.register('initializeAI', (msg: any) =>
+      this._initializeAI(msg.config)
+    );
+    this.messageHandler.register('sendAIMessage', (msg: any) =>
+      this._sendAIMessage(msg.content, msg.context)
+    );
+    this.messageHandler.register('disconnectAI', () => this._disconnectAI());
   }
 
   public resolveWebviewView(
@@ -85,9 +59,19 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-    // Handle messages from the webview
+    // Handle messages from the webview safely using the new MessageHandler
     webviewView.webview.onDidReceiveMessage(
-      this._handleWebviewMessage.bind(this, webviewView.webview),
+      async message => {
+        try {
+          await this.messageHandler.handleMessage(message);
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`Webview Error: ${error.message}`);
+          webviewView.webview.postMessage({
+            command: 'error',
+            data: error.message,
+          });
+        }
+      },
       undefined,
       this.context.subscriptions
     );
