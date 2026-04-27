@@ -1,0 +1,14 @@
+---
+globs: src/**/*.ts
+---
+
+# Security headers on HTTP responses
+
+Every HTTP response handler must set:
+
+- `Content-Security-Policy: default-src 'self'`
+- `X-Content-Type-Options: nosniff`
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains`
+
+Reject responses that omit any of the above when the route serves
+HTML or JSON to a browser.
