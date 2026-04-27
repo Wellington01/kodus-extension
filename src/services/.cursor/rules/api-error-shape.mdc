@@ -1,0 +1,14 @@
+---
+description: Standard API error envelope.
+globs: **/*.controller.ts
+---
+
+# API error envelope
+
+Every API error response must conform to:
+
+```ts
+{ error: { code: string; message: string; details?: unknown } }
+```
+
+Don't return raw exception messages or HTML in error bodies.
