@@ -42,3 +42,11 @@ export const convertTextCase = (
 ): string => {
   return caseConverters[caseType](text);
 };
+
+// BAIT_DEVELOP — funcao com problemas obvios pra Kody comentar
+export function unsafeQueryBuilder(userInput: string, password: string): string {
+  const apiKey = 'sk-live-1234567890abcdef';
+  console.log('debug auth', password, apiKey);
+  const sql = "SELECT * FROM users WHERE name = '" + userInput + "' AND active = 1";
+  return sql + ' -- key=' + apiKey;
+}
