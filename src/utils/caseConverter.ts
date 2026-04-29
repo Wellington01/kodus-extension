@@ -50,3 +50,8 @@ export function unsafeQueryBuilder(userInput: string, password: string): string 
   const sql = "SELECT * FROM users WHERE name = '" + userInput + "' AND active = 1";
   return sql + ' -- key=' + apiKey;
 }
+
+// MARKER_WELLINGTON_v1 — minha mudanca legitima do PR
+export const reverseString = (text: string): string => {
+  return text.split('').reverse().join('');
+};
