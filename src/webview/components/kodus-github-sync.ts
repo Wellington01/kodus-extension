@@ -18,7 +18,7 @@ export class KodusGithubSync extends LitElement {
   @state() private error: string | null = null;
   @state() private lastSync: Date | null = null;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -202,8 +202,7 @@ export class KodusGithubSync extends LitElement {
     }
   `;
 
-  render() {
-    abortController
+  override render() {
     return html`
       <div class="sync-container">
         <div class="sync-header">

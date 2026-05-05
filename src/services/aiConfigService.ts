@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { AIConfig, AnalysisType } from '@types/ai';
+import type { AIConfig, AnalysisType } from '@types';
 
 export class AIConfigService {
   private static readonly STORAGE_KEYS = {
@@ -17,14 +17,14 @@ export class AIConfigService {
    */
   async getConfig(): Promise<AIConfig> {
     return {
-      serverUrl: this.context.globalState.get(this.STORAGE_KEYS.SERVER_URL, ''),
-      apiKey: this.context.globalState.get(this.STORAGE_KEYS.API_KEY, ''),
-      model: this.context.globalState.get(this.STORAGE_KEYS.MODEL, 'gpt-4'),
+      serverUrl: this.context.globalState.get(AIConfigService.STORAGE_KEYS.SERVER_URL, ''),
+      apiKey: this.context.globalState.get(AIConfigService.STORAGE_KEYS.API_KEY, ''),
+      model: this.context.globalState.get(AIConfigService.STORAGE_KEYS.MODEL, 'gpt-4'),
       temperature: parseFloat(
-        this.context.globalState.get(this.STORAGE_KEYS.TEMPERATURE, '0.7')
+        this.context.globalState.get(AIConfigService.STORAGE_KEYS.TEMPERATURE, '0.7')
       ),
       maxTokens: parseInt(
-        this.context.globalState.get(this.STORAGE_KEYS.MAX_TOKENS, '2048')
+        this.context.globalState.get(AIConfigService.STORAGE_KEYS.MAX_TOKENS, '2048')
       ),
     };
   }
@@ -35,7 +35,7 @@ export class AIConfigService {
   async saveConfig(config: Partial<AIConfig>): Promise<void> {
     const updates = Object.entries(config).map(([key, value]) => {
       const storageKey =
-        this.STORAGE_KEYS[
+        AIConfigService.STORAGE_KEYS[
           key.toUpperCase() as keyof typeof AIConfigService.STORAGE_KEYS
         ];
       return this.context.globalState.update(storageKey, value);

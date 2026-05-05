@@ -25,6 +25,7 @@
       "@commands/*": ["src/commands/*"],
       "@providers/*": ["src/providers/*"],
       "@utils/*": ["src/utils/*"],
+      "@utils": ["src/utils/index"],
       "@types/*": ["src/types/*"],
       "@types": ["src/types/index"],
       "@webview/*": ["src/webview/*"],

@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
-import type { ExtensionContext } from '@types';
+import type { ExtensionContext, AnalysisType } from '@types';
 import { AIConfigService } from '@services/aiConfigService';
 import { AIAnalysisService } from '@services/aiAnalysisService';
-import type { AnalysisType } from '@types/ai';
 
 export class AnalyzeCodeCommand {
   constructor(

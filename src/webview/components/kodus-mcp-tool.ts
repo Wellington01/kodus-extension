@@ -9,7 +9,7 @@ export class KodusMcpTool extends LitElement {
   @state() private result: any = null;
   @state() private error: string | null = null;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -132,7 +132,7 @@ export class KodusMcpTool extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     return html`
       <div class="tool-container">
         <div class="tool-header">

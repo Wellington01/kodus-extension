@@ -38,14 +38,19 @@ jest.mock('vscode', () => ({
   SnippetString: jest.fn(),
 }), { virtual: true });
 
+declare global {
+  // eslint-disable-next-line no-var
+  var createMockExtensionContext: () => unknown;
+}
+
 // Global test utilities
-global.createMockExtensionContext = () => ({
+globalThis.createMockExtensionContext = () => ({
   globalState: {
     get: jest.fn(),
     update: jest.fn(),
   },
   subscriptions: [],
-  extensionUri: {} as any,
+  extensionUri: {} as unknown,
 });
 
 // Clean up after each test

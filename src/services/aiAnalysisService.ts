@@ -1,4 +1,4 @@
-import type { AnalysisType, AnalysisResult } from '@types/ai';
+import type { AnalysisType, AnalysisResult } from '@types';
 
 export class AIAnalysisService {
   private readonly prompts: Record<AnalysisType, (code: string) => string> = {

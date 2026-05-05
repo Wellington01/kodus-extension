@@ -3,11 +3,11 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('kodus-card')
 export class KodusCard extends LitElement {
-  @property({ type: String }) title = '';
+  @property({ type: String }) override title = '';
   @property({ type: String }) description = '';
   @property({ type: Boolean }) interactive = false;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
     }
@@ -52,9 +52,9 @@ export class KodusCard extends LitElement {
     }
   `;
 
-  render() {
+  override render() {
     return html`
-      <div 
+      <div
         class="card ${this.interactive ? 'interactive' : ''}"
         @click=${this._handleClick}
       >

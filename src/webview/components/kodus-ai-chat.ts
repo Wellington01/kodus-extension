@@ -27,7 +27,7 @@ export class KodusAiChat extends LitElement {
   private eventSource?: EventSource;
   private messageId = 0;
 
-  static styles = css`
+  static override styles = css`
     :host {
       display: block;
       font-family: var(--vscode-font-family);
@@ -269,7 +269,7 @@ export class KodusAiChat extends LitElement {
     }
 
     try {
-      this.isConnected = false;
+      this.connected = false;
       this.connectionError = '';
 
       const url = new URL('/api/ai/stream', this.serverUrl);
