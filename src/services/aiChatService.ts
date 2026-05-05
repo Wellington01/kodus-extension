@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import type { AIConfig, AIMessage } from '@types';
 
+type ChatWebviewMessage =
+  | { command: 'sendMessage'; content: string }
+  | { command: 'configureAI' };
+
 export class AIChatService {
   constructor(private config: AIConfig) {}
 
@@ -22,7 +26,7 @@ export class AIChatService {
 
     // Handle messages from webview
     panel.webview.onDidReceiveMessage(
-      async message => {
+      async (message: ChatWebviewMessage) => {
         await this.handleWebviewMessage(message, panel, context);
       },
       undefined,
@@ -36,7 +40,7 @@ export class AIChatService {
    * Processar mensagem do webview
    */
   private async handleWebviewMessage(
-    message: any,
+    message: ChatWebviewMessage,
     panel: vscode.WebviewPanel,
     context: vscode.ExtensionContext
   ): Promise<void> {

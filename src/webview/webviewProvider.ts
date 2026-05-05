@@ -1,6 +1,20 @@
 import * as vscode from 'vscode';
 import type { ExtensionContext } from '@types';
-import { AIManager, AIStreamProvider } from '@providers/aiStreamProvider';
+import {
+  AIManager,
+  AIStreamProvider,
+  type AIStreamConfig,
+} from '@providers/aiStreamProvider';
+import type { CaseConverterType } from '@utils/caseConverter';
+
+type WebviewIncomingMessage =
+  | { command: 'formatJson' }
+  | { command: 'convertCase' }
+  | { command: 'insertTimestamp' }
+  | { command: 'insertSnippet' }
+  | { command: 'initializeAI'; config: AIStreamConfig }
+  | { command: 'sendAIMessage'; content: string; context?: unknown }
+  | { command: 'disconnectAI' };
 
 export class KodusWebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'kodus-extension.webview';
@@ -31,7 +45,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     // Handle messages from the webview
     webviewView.webview.onDidReceiveMessage(
-      message => {
+      (message: WebviewIncomingMessage) => {
         switch (message.command) {
           case 'formatJson':
             this._formatJson();
@@ -757,7 +771,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     const text = editor.document.getText(editor.selection);
 
-    const items = [
+    const items: { label: CaseConverterType; description: string }[] = [
       { label: 'UPPERCASE', description: 'Convert to uppercase' },
       { label: 'lowercase', description: 'Convert to lowercase' },
       { label: 'camelCase', description: 'Convert to camelCase' },
@@ -772,9 +786,8 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
 
     if (!selected) return;
 
-    // Import the converter function
     const { convertTextCase } = await import('@utils/caseConverter');
-    const converted = convertTextCase(text, selected.label as any);
+    const converted = convertTextCase(text, selected.label);
 
     await editor.edit(editBuilder => {
       editBuilder.replace(editor.selection, converted);
@@ -884,7 +897,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     );
   }
 
-  private async _initializeAI(config: any) {
+  private async _initializeAI(config: AIStreamConfig) {
     try {
       if (this.aiProvider) {
         this.aiProvider.disconnect();
@@ -927,7 +940,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private async _sendAIMessage(content: string, context?: any) {
+  private async _sendAIMessage(content: string, context?: unknown) {
     if (!this.aiProvider || !this.aiProvider.connected) {
       if (this._view) {
         this._view.webview.postMessage({

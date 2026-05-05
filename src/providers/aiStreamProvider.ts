@@ -114,7 +114,7 @@ export class AIStreamProvider {
   /**
    * Envia mensagem para o agente de AI
    */
-  async sendMessage(message: string, context?: any): Promise<void> {
+  async sendMessage(message: string, context?: unknown): Promise<void> {
     if (!this.isConnected) {
       throw new Error('Not connected to AI service');
     }

@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import type { AIStreamMessage } from '@providers/aiStreamProvider';
 
 interface ChatMessage {
   id: string;
@@ -295,7 +296,7 @@ export class KodusAiChat extends LitElement {
 
       this.eventSource.onmessage = event => {
         try {
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(event.data) as AIStreamMessage;
           this.handleStreamMessage(data);
         } catch (error) {
           console.error('Error parsing stream message:', error);
@@ -321,7 +322,7 @@ export class KodusAiChat extends LitElement {
     this.connected = false;
   }
 
-  private handleStreamMessage(data: any) {
+  private handleStreamMessage(data: AIStreamMessage) {
     switch (data.type) {
       case 'text':
         this.handleTextChunk(data.content);
