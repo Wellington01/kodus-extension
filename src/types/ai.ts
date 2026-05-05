@@ -35,8 +35,3 @@ export interface AnalysisResult {
   timestamp: number;
   prompt: string;
 }
-
-export interface AICommandContext {
-  config: AIConfig;
-  context: any;
-}

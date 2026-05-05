@@ -81,16 +81,6 @@ export class AIChatService {
     }
   }
 
-  // VIOLATION: Method with a silent catch block for testing the review process.
-  private async processMessageWithViolation(content: string): Promise<void> {
-    try {
-      // This would normally throw an error.
-      JSON.parse("{ 'invalidJSON' }");
-    } catch (error) {
-      // Silently ignoring the error, which is bad practice.
-    }
-  }
-
   /**
    * Simular resposta do AI (para desenvolvimento)
    */
