@@ -1,11 +1,19 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
+interface GithubPR {
+  number: number;
+  title: string;
+  state: string;
+  user: { login: string };
+  updated_at: string;
+}
+
 @customElement('kodus-github-sync')
 export class KodusGithubSync extends LitElement {
   @property({ type: String }) repo = '';
   @property({ type: String }) branch = 'main';
-  @state() private prs: any[] = [];
+  @state() private prs: GithubPR[] = [];
   @state() private loading = false;
   @state() private error: string | null = null;
   @state() private lastSync: Date | null = null;
@@ -276,11 +284,14 @@ export class KodusGithubSync extends LitElement {
     this.error = null;
 
     try {
-      const result = await this._sendMessageToExtension('fetch-github-prs', {
-        repo: this.repo,
-        branch: this.branch
-      });
-      
+      const result = await this._sendMessageToExtension<{ prs?: GithubPR[] }>(
+        'fetch-github-prs',
+        {
+          repo: this.repo,
+          branch: this.branch,
+        }
+      );
+
       this.prs = result.prs || [];
       this.lastSync = new Date();
     } catch (err) {
@@ -318,7 +329,7 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _openPR(pr: any) {
+  private _openPR(pr: GithubPR) {
     this._sendMessageToExtension('open-github-pr', {
       repo: this.repo,
       prNumber: pr.number
@@ -342,28 +353,28 @@ export class KodusGithubSync extends LitElement {
     }
   }
 
-  private _sendMessageToExtension(command: string, data: any) {
-    return new Promise((resolve, reject) => {
+  private _sendMessageToExtension<T = unknown>(
+    command: string,
+    data: unknown
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
       const message = { command, data };
-      
-      // Send message to webview provider
+
       window.parent.postMessage(message, '*');
-      
-      // Listen for response
+
       const handleResponse = (event: MessageEvent) => {
         if (event.data.command === `${command}-response`) {
           window.removeEventListener('message', handleResponse);
           if (event.data.error) {
             reject(new Error(event.data.error));
           } else {
-            resolve(event.data.result);
+            resolve(event.data.result as T);
           }
         }
       };
-      
+
       window.addEventListener('message', handleResponse);
-      
-      // Timeout after 30 seconds
+
       setTimeout(() => {
         window.removeEventListener('message', handleResponse);
         reject(new Error('Request timeout'));

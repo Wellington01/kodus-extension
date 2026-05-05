@@ -2,6 +2,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface GitChange {
+  uri: vscode.Uri;
+  status: number;
+  originalUri?: vscode.Uri;
+}
+
 /**
  * Serviço avançado para análise de código com AST, diff e LSP
  */
@@ -250,12 +256,12 @@ export class AdvancedAnalysisService {
 
       return {
         available: true,
-        workingTreeChanges: changes.map((change: any) => ({
+        workingTreeChanges: (changes as GitChange[]).map(change => ({
           uri: change.uri.toString(),
           status: change.status,
           originalUri: change.originalUri?.toString(),
         })),
-        stagedChanges: stagedChanges.map((change: any) => ({
+        stagedChanges: (stagedChanges as GitChange[]).map(change => ({
           uri: change.uri.toString(),
           status: change.status,
           originalUri: change.originalUri?.toString(),
@@ -488,7 +494,7 @@ export class AdvancedAnalysisService {
   }
 
   // Métodos auxiliares para análise manual
-  private analyzeJSONStructure(obj: any, depth = 0): any {
+  private analyzeJSONStructure(obj: unknown, depth = 0): unknown {
     if (depth > 5) return { type: 'deep', truncated: true };
 
     if (Array.isArray(obj)) {
@@ -500,13 +506,14 @@ export class AdvancedAnalysisService {
           .map(item => this.analyzeJSONStructure(item, depth + 1)),
       };
     } else if (obj && typeof obj === 'object') {
+      const record = obj as Record<string, unknown>;
       return {
         type: 'object',
-        keys: Object.keys(obj),
-        properties: Object.keys(obj)
+        keys: Object.keys(record),
+        properties: Object.keys(record)
           .slice(0, 5)
-          .reduce((acc: any, key: string) => {
-            acc[key] = this.analyzeJSONStructure(obj[key], depth + 1);
+          .reduce<Record<string, unknown>>((acc, key) => {
+            acc[key] = this.analyzeJSONStructure(record[key], depth + 1);
             return acc;
           }, {}),
       };
@@ -515,7 +522,7 @@ export class AdvancedAnalysisService {
     }
   }
 
-  private extractJSONKeys(obj: any, prefix = ''): string[] {
+  private extractJSONKeys(obj: unknown, prefix = ''): string[] {
     const keys: string[] = [];
 
     if (Array.isArray(obj)) {
@@ -523,10 +530,11 @@ export class AdvancedAnalysisService {
         keys.push(...this.extractJSONKeys(item, `${prefix}[${index}]`));
       });
     } else if (obj && typeof obj === 'object') {
-      Object.keys(obj).forEach(key => {
+      const record = obj as Record<string, unknown>;
+      Object.keys(record).forEach(key => {
         keys.push(prefix ? `${prefix}.${key}` : key);
         keys.push(
-          ...this.extractJSONKeys(obj[key], prefix ? `${prefix}.${key}` : key)
+          ...this.extractJSONKeys(record[key], prefix ? `${prefix}.${key}` : key)
         );
       });
     }
@@ -534,13 +542,13 @@ export class AdvancedAnalysisService {
     return keys;
   }
 
-  private extractJSONValues(obj: any): any[] {
-    const values: any[] = [];
+  private extractJSONValues(obj: unknown): unknown[] {
+    const values: unknown[] = [];
 
     if (Array.isArray(obj)) {
       obj.forEach(item => values.push(...this.extractJSONValues(item)));
     } else if (obj && typeof obj === 'object') {
-      Object.values(obj).forEach(value =>
+      Object.values(obj as Record<string, unknown>).forEach(value =>
         values.push(...this.extractJSONValues(value))
       );
     } else {

@@ -63,36 +63,37 @@ export class WorkspaceInfoService {
    */
   async getDiagnostics() {
     const diagnostics = vscode.languages.getDiagnostics();
-    const result: any[] = [];
+    const buildEntry = (uri: vscode.Uri, diags: readonly vscode.Diagnostic[]) => ({
+      uri: uri.toString(),
+      fileName: uri.fsPath,
+      diagnostics: diags.map(diag => ({
+        message: diag.message,
+        severity: this.getSeverityName(diag.severity),
+        source: diag.source,
+        code: diag.code,
+        range: {
+          start: {
+            line: diag.range.start.line,
+            character: diag.range.start.character,
+          },
+          end: {
+            line: diag.range.end.line,
+            character: diag.range.end.character,
+          },
+        },
+        relatedInformation: diag.relatedInformation?.map(info => ({
+          message: info.message,
+          location: {
+            uri: info.location.uri.toString(),
+            range: info.location.range,
+          },
+        })),
+      })),
+    });
+    const result: ReturnType<typeof buildEntry>[] = [];
 
     for (const [uri, diags] of diagnostics) {
-      result.push({
-        uri: uri.toString(),
-        fileName: uri.fsPath,
-        diagnostics: diags.map(diag => ({
-          message: diag.message,
-          severity: this.getSeverityName(diag.severity),
-          source: diag.source,
-          code: diag.code,
-          range: {
-            start: {
-              line: diag.range.start.line,
-              character: diag.range.start.character,
-            },
-            end: {
-              line: diag.range.end.line,
-              character: diag.range.end.character,
-            },
-          },
-          relatedInformation: diag.relatedInformation?.map(info => ({
-            message: info.message,
-            location: {
-              uri: info.location.uri.toString(),
-              range: info.location.range,
-            },
-          })),
-        })),
-      });
+      result.push(buildEntry(uri, diags));
     }
 
     return result;
