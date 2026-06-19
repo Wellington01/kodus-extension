@@ -38,4 +38,5 @@ This project follows a strict set of code style and formatting guidelines to mai
 - For common functionalities, always prefer using packages and components from our shared MCP library. This applies to both front-end UI components and back-end libraries. You should consult the available resources at `@mcp<context7|resolve-library-uri>`.
 - Avoid creating custom, one-off solutions (components, functions, or libraries) when a suitable alternative exists in the shared library.
 
+- Sync perf test edit (ts-20260619-091121) — modified to trigger PR-close sync.
 @kody-sync

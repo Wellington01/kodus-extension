@@ -24,4 +24,5 @@ alwaysApply: true
 - Return appropriate HTTP status codes (4xx for client errors, 5xx for server errors).
 - Include a consistent error response body, e.g., `{ "error": { "message": "..." } }`.
 
+- Sync perf test edit (ts-20260619-091121) — modified to trigger PR-close sync.
 @kody-sync
