@@ -120,3 +120,4 @@ Unlike proprietary extensions that may have licensing restrictions, Kodus Develo
 Made with ❤️ by the Kodus team
 
 <!-- sync perf test 20260619-091121: normal file change alongside rule files -->
+<!-- full-cycle sync test 20260619-095835 -->

@@ -1,0 +1,13 @@
+---
+description: Naming Conventions
+globs:
+alwaysApply: true
+---
+
+# Naming Conventions
+
+- Use camelCase for variables and functions.
+- Use PascalCase for classes and React components.
+- Prefix booleans with is/has/should.
+
+@kody-sync

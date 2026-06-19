@@ -25,4 +25,5 @@ alwaysApply: true
 - Include a consistent error response body, e.g., `{ "error": { "message": "..." } }`.
 
 - Sync perf test edit (ts-20260619-091121) — modified to trigger PR-close sync.
+- EDITED: always log the error context before re-throwing (sync-cycle test).
 @kody-sync
