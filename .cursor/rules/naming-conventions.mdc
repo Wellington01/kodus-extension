@@ -6,15 +6,12 @@ alwaysApply: true
 
 # Naming Conventions
 
-- Use camelCase for variables and functions.
+## General Guidelines
+
+- Use camelCase for variables and functions, following the patterns demonstrated in the activation flow within @file:src/extension.ts#L1-L30.
 - Use PascalCase for classes and React components.
 - Prefix booleans with is/has/should.
-
-
-## References (@file test)
-- Project readme: @file:README.md
-- Entry point: @file:src/extension.ts#L1-L30
-- Lint config: @file:.eslintrc.json
-- Missing (negative case): @file:does-not-exist.ts
+- Keep names consistent with the project conventions documented in @file:README.md and the lint configuration in @file:.eslintrc.json.
+- Do not rely on @file:does-not-exist.ts for examples — this file is intentionally missing (negative case).
 
 @kody-sync
