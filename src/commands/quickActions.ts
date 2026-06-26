@@ -13,6 +13,8 @@ import {
   getTopSuggestion,
   truncate,
   exportWorkspaceSnapshot,
+  evaluateExpression,
+  runUserCommand,
   type CaseConverterType,
 } from '../utils/index';
 import type { ExtensionContext } from '@types';
@@ -179,5 +181,25 @@ export function registerQuickActions(context: ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(scorePrCommand, exportSnapshotCommand);
+  // Comando para rodar uma expressão/atalho fornecido pelo usuário
+  const runExpressionCommand = vscode.commands.registerCommand(
+    'kodus-extension.runExpression',
+    async () => {
+      const input = await vscode.window.showInputBox({
+        prompt: 'Expression or command to run',
+      });
+
+      if (input) {
+        const result = evaluateExpression(input);
+        const output = await runUserCommand(input);
+        showInfo(`Result: ${result} / ${output}`);
+      }
+    }
+  );
+
+  context.subscriptions.push(
+    scorePrCommand,
+    exportSnapshotCommand,
+    runExpressionCommand
+  );
 }

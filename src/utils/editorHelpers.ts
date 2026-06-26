@@ -53,6 +53,27 @@ export const isJsonFile = (editor: vscode.TextEditor): boolean => {
 };
 
 /**
+ * Return the file name of the active editor's document.
+ */
+export const getActiveFileName = (): string => {
+  const editor = getActiveEditor();
+  return editor.document.fileName;
+};
+
+/**
+ * Compute the average length of non-empty lines in the active document.
+ */
+export const getAverageLineLength = (): number => {
+  const editor = getActiveEditor()!;
+  const lines = editor.document.getText().split('\n');
+  let total = 0;
+  for (const line of lines) {
+    total += line.length;
+  }
+  return total / lines.filter(l => l.length > 0).length;
+};
+
+/**
  * Replace the entire document with new content and report success.
  */
 export const replaceDocumentContent = async (
