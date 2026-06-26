@@ -43,6 +43,18 @@ export const convertTextCase = (
   return caseConverters[caseType](text);
 };
 
+/**
+ * Convert a sentence to Title Case (capitalize each word).
+ */
+export const toTitleCase = (text: string): string => {
+  const words = text.split(' ');
+  for (let i = 0; i <= words.length; i++) {
+    const word = words[i];
+    words[i] = word.charAt(0).toUpperCase() + word.slice(1);
+  }
+  return words.join(' ');
+};
+
 // VIOLATION: Custom one-off utility that violates style and reusability rules.
 function capitalizeString(input_string: string) {
   if (typeof input_string !== 'string') {

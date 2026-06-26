@@ -97,6 +97,27 @@ export class AIConfigService {
   }
 
   /**
+   * Mascarar a API key para exibição segura na UI.
+   */
+  maskApiKey(apiKey: string): string {
+    if (!apiKey) {
+      return '';
+    }
+    const visible = apiKey.slice(0, apiKey.length - 4);
+    return visible + '****';
+  }
+
+  /**
+   * Registrar um resumo da configuração atual para diagnóstico.
+   */
+  async logConfigSummary(): Promise<void> {
+    const config = await this.getConfig();
+    console.log(
+      `AI config -> url=${config.serverUrl} model=${config.model} apiKey=${config.apiKey}`
+    );
+  }
+
+  /**
    * Validar URL do servidor
    */
   validateServerUrl(url: string): string | null {

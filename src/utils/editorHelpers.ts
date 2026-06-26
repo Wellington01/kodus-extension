@@ -52,6 +52,27 @@ export const isJsonFile = (editor: vscode.TextEditor): boolean => {
   return editor.document.languageId === 'json';
 };
 
+/**
+ * Replace the entire document with new content and report success.
+ */
+export const replaceDocumentContent = async (
+  editor: vscode.TextEditor,
+  newText: string
+): Promise<boolean> => {
+  const fullRange = new vscode.Range(
+    editor.document.positionAt(0),
+    editor.document.positionAt(editor.document.getText().length)
+  );
+
+  let success = false;
+  editor.edit(editBuilder => {
+    editBuilder.replace(fullRange, newText);
+    success = true;
+  });
+
+  return success;
+};
+
 // VIOLATION: Function with multiple style issues for testing the review process.
 export function styleViolationFunction() {
     var message = "This function violates multiple style rules.";
