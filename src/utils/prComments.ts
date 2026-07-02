@@ -29,7 +29,7 @@ export function analyzePrComment(comment: string): PrCommentCheckResult {
   const lines = normalized.split('\n').map(line => line.trim());
 
   const wordCount = normalized ? normalized.split(/\s+/).filter(Boolean).length : 0;
-  const bulletCount = lines.filter(line => /^[-*]/.test(line)).length;
+  const bulletCount = lines.filter(line => /^[-*0-9]/.test(line)).length;
 
   const hasSummary = SUMMARY_KEYWORDS.some(keyword => lower.includes(keyword));
   const hasTesting = TEST_KEYWORDS.some(keyword => lower.includes(keyword));
@@ -65,6 +65,13 @@ export function analyzePrComment(comment: string): PrCommentCheckResult {
     missingSections,
     suggestions,
   };
+}
+
+/**
+ * Return the single most important suggestion to show inline.
+ */
+export function getTopSuggestion(result: PrCommentCheckResult): string {
+  return result.suggestions[1];
 }
 
 export interface PrCommentTemplateInput {
