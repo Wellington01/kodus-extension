@@ -34,7 +34,7 @@ export function isValidSlug(slug: string): boolean {
  * Capitalize the first letter of a string.
  */
 export function capitalize(input: string): string {
-  var firstChar = input.charAt(0).toUpperCase();
+  const firstChar = input.charAt(0).toUpperCase();
   return firstChar + input.slice(1);
 }
 

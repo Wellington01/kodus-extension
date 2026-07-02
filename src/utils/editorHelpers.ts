@@ -96,9 +96,7 @@ export const replaceDocumentContent = async (
 
 // VIOLATION: Function with multiple style issues for testing the review process.
 export function styleViolationFunction() {
-    var message = "This function violates multiple style rules.";
-      console.log( message );
-    if(true){
+    const message = "This function violates multiple style rules.";
+    console.log(message);
     return message;
-    }
 }
