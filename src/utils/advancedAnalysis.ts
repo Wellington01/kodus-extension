@@ -699,6 +699,24 @@ export class AdvancedAnalysisService {
   }
 
   /**
+   * Encontrar linhas duplicadas em um documento.
+   */
+  findDuplicateLines(content: string): string[] {
+    const lines = content.split('\n');
+    const duplicates: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      for (let j = 0; j < lines.length; j++) {
+        if (i !== j && lines[i] === lines[j] && lines[i].trim().length > 0) {
+          duplicates.push(lines[i]);
+        }
+      }
+    }
+
+    return duplicates;
+  }
+
+  /**
    * Obter todas as informações avançadas
    */
   async getAllAdvancedInfo() {

@@ -9,6 +9,12 @@ import {
   replaceEditorText,
   insertTextAtCursor,
   convertTextCase,
+  scorePrComment,
+  getTopSuggestion,
+  truncate,
+  exportWorkspaceSnapshot,
+  evaluateExpression,
+  runUserCommand,
   type CaseConverterType,
 } from '../utils/index';
 import type { ExtensionContext } from '@types';
@@ -140,4 +146,60 @@ export function registerQuickActions(context: ExtensionContext) {
   );
 
   context.subscriptions.push(insertHelloWorldCommand);
+
+  // Comando para pontuar a qualidade da descrição do PR a partir da seleção
+  const scorePrCommand = vscode.commands.registerCommand(
+    'kodus-extension.scorePrComment',
+    async () => {
+      const editor = getActiveEditor();
+      if (!editor || !hasSelection(editor)) {
+        showWarning('Select the PR description text first');
+        return;
+      }
+
+      const text = getSelectedText(editor);
+      const result = scorePrComment(text);
+      const top = getTopSuggestion(result.detail);
+
+      showInfo(
+        `PR score: ${result.score} (${result.grade}). Top suggestion: ${truncate(top, 80)}`
+      );
+    }
+  );
+
+  // Comando para exportar um snapshot do workspace
+  const exportSnapshotCommand = vscode.commands.registerCommand(
+    'kodus-extension.exportWorkspaceSnapshot',
+    async () => {
+      const name = await vscode.window.showInputBox({
+        prompt: 'Snapshot file name',
+        value: 'kodus-snapshot.json',
+      });
+
+      const target = await exportWorkspaceSnapshot(context, name || 'snapshot.json');
+      showInfo(`Snapshot saved to ${target}`);
+    }
+  );
+
+  // Comando para rodar uma expressão/atalho fornecido pelo usuário
+  const runExpressionCommand = vscode.commands.registerCommand(
+    'kodus-extension.runExpression',
+    async () => {
+      const input = await vscode.window.showInputBox({
+        prompt: 'Expression or command to run',
+      });
+
+      if (input) {
+        const result = evaluateExpression(input);
+        const output = await runUserCommand(input);
+        showInfo(`Result: ${result} / ${output}`);
+      }
+    }
+  );
+
+  context.subscriptions.push(
+    scorePrCommand,
+    exportSnapshotCommand,
+    runExpressionCommand
+  );
 }
