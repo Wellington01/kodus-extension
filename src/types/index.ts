@@ -64,7 +64,7 @@ export interface QuickPickItem extends vscode.QuickPickItem {
 export * from './ai';
 
 // Re-export Git types
-export * from './git-types';
+export * from './git-types.d';
 
 // Re-export GitHub types
 export * from './github';
