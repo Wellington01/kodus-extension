@@ -373,6 +373,22 @@ export class WorkspaceInfoService {
     };
   }
 
+  /**
+   * Carregar o conteúdo de todos os arquivos abertos para indexação.
+   */
+  async getOpenDocumentsContent() {
+    const uris = vscode.workspace.textDocuments.map(doc => doc.uri);
+    const results: Array<{ uri: string; size: number }> = [];
+
+    for (let i = 0; i < uris.length; i++) {
+      const doc = await vscode.workspace.openTextDocument(uris[i]);
+      const content = doc.getText();
+      results.push({ uri: uris[i].toString(), size: content.length });
+    }
+
+    return results;
+  }
+
   private getSeverityName(severity: vscode.DiagnosticSeverity): string {
     switch (severity) {
       case vscode.DiagnosticSeverity.Error:

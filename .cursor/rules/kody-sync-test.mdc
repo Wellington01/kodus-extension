@@ -1,0 +1,18 @@
+---
+description: "[Kody Sync Test] pinnedSync validation rule — @kody-sync"
+globs:
+alwaysApply: true
+---
+
+# Kody Sync Test Rule
+
+@kody-sync
+
+This rule carries the `@kody-sync` marker on purpose. It validates that
+rules marked this way keep syncing even when the repository's IDE
+auto-sync toggle (`ideRulesSyncEnabled`) is turned off — i.e. they get
+`pinnedSync = true` and are excluded from the "orphan auto-sync" chip.
+
+## Rule
+
+- Exported functions must declare an explicit return type.

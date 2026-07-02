@@ -213,7 +213,11 @@ export class KodusMcpTool extends LitElement {
       const vscodeApi = this._getVsCodeApi();
 
       // Send message to webview provider
-      vscodeApi?.postMessage ? vscodeApi.postMessage(message) : window.parent.postMessage(message, '*');
+      if (vscodeApi?.postMessage) {
+        vscodeApi.postMessage(message);
+      } else {
+        window.parent.postMessage(message, '*');
+      }
 
       let settled = false;
       const timeoutId = window.setTimeout(() => {

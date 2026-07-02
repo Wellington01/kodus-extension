@@ -3,11 +3,11 @@ import type { AIConfig, AnalysisType } from '@types/ai';
 
 export class AIConfigService {
   private static readonly STORAGE_KEYS = {
-    serverUrl: 'ai.serverUrl',
-    apiKey: 'ai.apiKey',
-    model: 'ai.model',
-    temperature: 'ai.temperature',
-    maxTokens: 'ai.maxTokens',
+    SERVER_URL: 'ai.serverUrl',
+    API_KEY: 'ai.apiKey',
+    MODEL: 'ai.model',
+    TEMPERATURE: 'ai.temperature',
+    MAX_TOKENS: 'ai.maxTokens',
   } as const;
 
   constructor(private context: vscode.ExtensionContext) {}
@@ -16,15 +16,15 @@ export class AIConfigService {
    * Obter configuração atual do AI
    */
   async getConfig(): Promise<AIConfig> {
-    const keys = AIConfigService.STORAGE_KEYS;
     return {
-      serverUrl: this.context.globalState.get(keys.serverUrl, ''),
-      apiKey: this.context.globalState.get(keys.apiKey, ''),
-      model: this.context.globalState.get(keys.model, 'gpt-4'),
+      serverUrl: this.context.globalState.get(this.STORAGE_KEYS.SERVER_URL, ''),
+      apiKey: this.context.globalState.get(this.STORAGE_KEYS.API_KEY, ''),
+      model: this.context.globalState.get(this.STORAGE_KEYS.MODEL, 'gpt-4'),
       temperature: parseFloat(
-
+        this.context.globalState.get(this.STORAGE_KEYS.TEMPERATURE, '0.7')
+      ),
       maxTokens: parseInt(
-        this.context.globalState.get(keys.maxTokens, '2048')
+        this.context.globalState.get(this.STORAGE_KEYS.MAX_TOKENS, '2048')
       ),
     };
   }
@@ -33,19 +33,29 @@ export class AIConfigService {
    * Salvar configuração do AI
    */
   async saveConfig(config: Partial<AIConfig>): Promise<void> {
-    const keys = AIConfigService.STORAGE_KEYS;
     const updates = Object.entries(config).map(([key, value]) => {
-
+      const storageKey =
+        this.STORAGE_KEYS[
+          key.toUpperCase() as keyof typeof AIConfigService.STORAGE_KEYS
+        ];
+      return this.context.globalState.update(storageKey, value);
+    });
 
     await Promise.all(updates);
   }
 
-
+  /**
+   * Verificar se configuração está completa
+   */
+  async isConfigured(): Promise<boolean> {
+    const config = await this.getConfig();
+    return Boolean(config.serverUrl && config.serverUrl.trim().length > 0);
+  }
 
   /**
    * Obter opções de modelo disponíveis
    */
-  (): Array<{ label: string; description: string }> {
+  getModelOptions(): Array<{ label: string; description: string }> {
     return [
       { label: 'gpt-4', description: 'Most capable model' },
       { label: 'gpt-3.5-turbo', description: 'Faster and cheaper' },
@@ -84,6 +94,27 @@ export class AIConfigService {
         description: 'Specify custom analysis requirements',
       },
     ];
+  }
+
+  /**
+   * Mascarar a API key para exibição segura na UI.
+   */
+  maskApiKey(apiKey: string): string {
+    if (!apiKey) {
+      return '';
+    }
+    const visible = apiKey.slice(0, apiKey.length - 4);
+    return visible + '****';
+  }
+
+  /**
+   * Registrar um resumo da configuração atual para diagnóstico.
+   */
+  async logConfigSummary(): Promise<void> {
+    const config = await this.getConfig();
+    console.log(
+      `AI config -> url=${config.serverUrl} model=${config.model} apiKey=${config.apiKey}`
+    );
   }
 
   /**
