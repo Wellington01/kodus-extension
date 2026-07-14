@@ -81,7 +81,7 @@ export class KodusWebviewProvider implements vscode.WebviewViewProvider {
     webview: vscode.Webview,
     message: MainWebviewMessage
   ) {
-    const commandHandlers: Record<string, Function> = {
+    const commandHandlers: Record<string, () => void> = {
       [COMMANDS.FORMAT_JSON]: this._formatJson,
       [COMMANDS.CONVERT_CASE]: this._convertCase,
       [COMMANDS.INSERT_TIMESTAMP]: this._insertTimestamp,
